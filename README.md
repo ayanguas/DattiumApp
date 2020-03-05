@@ -18,4 +18,4 @@ Por defecto PostgreSQL está configurado para trabajar solo en local, para poder
   2. Se debe modificar el archivo *pg_hba.conf* se debe añadir la siguiente linea *host all all 0.0.0.0/0 md5*
   
   
-[Link](https://blog.bigbinary.com/2016/01/23/configure-postgresql-to-allow-remote-connection.html)
+[Reference](https://blog.bigbinary.com/2016/01/23/configure-postgresql-to-allow-remote-connection.html)
