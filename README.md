@@ -1,7 +1,7 @@
 # DattiumApp
 Aplicación de visualización en la nube de Dattium
 
-
+Para esta aplicación vamos a utilizar el dataset *[Quality Prediction in a Mining Process]*(https://www.kaggle.com/edumagalhaes/quality-prediction-in-a-mining-process#MiningProcess_Flotation_Plant_Database.csv)
 
 ## Creación de la BBDD PostgreSQL
 
