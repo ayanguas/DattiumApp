@@ -16,3 +16,4 @@ Si se quiere trabajar en **local**, se debe abrir el programa pgAdmin, entrar de
 Por defecto PostgreSQL está configurado para trabajar solo en local, para poder habilitar el acceso remoto se debe configurar de la siguiente manera:
   1. Se debe modificar el archivo *postgresql.conf* y modificar la linea *listen_addres = 'localhost'* por **listen_addres = '*'**
   2. Se debe modificar el archivo *pg_hba.conf* se debe añadir la siguiente linea *host all all 0.0.0.0/0 md5*
+[Link](https://blog.bigbinary.com/2016/01/23/configure-postgresql-to-allow-remote-connection.html)
