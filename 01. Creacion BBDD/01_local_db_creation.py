@@ -9,9 +9,12 @@ Created on Thu Mar  5 16:29:58 2020
 import pandas as pd
 from sqlalchemy import create_engine
 import numpy as np
+from datetime import datetime
 
-# Load csv to a DataFrame
-df = pd.read_csv('../data/MiningProcess_Flotation_Plant_Database.csv', nrows=10000)
+# Load csv to a DataFrame (converters is used to change string date to datetime)
+df = pd.read_csv('../data/MiningProcess_Flotation_Plant_Database.csv', \
+                 converters={'date': lambda x: datetime.strptime(x, '%Y-%m-%d %H:%M:%S')},\
+                     decimal =',')
 
 # Delete of character '%' from DataFrame columns names
 array_columns = []
@@ -23,4 +26,4 @@ df.columns = array_columns
 conn = create_engine('postgresql://test:test123@127.0.0.1:5432/DattiumApp')
 
 # Create a table with df 
-df.to_sql(name='test', con=conn, if_exists = 'replace')
+df.to_sql(name='signals', con=conn, if_exists = 'replace', index=False)
