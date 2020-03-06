@@ -23,6 +23,7 @@ df = pd.read_sql('SELECT * FROM signals', local_conn, parse_dates='date')
 #                             02_TRANSFORM                                   #
 ##############################################################################
 
+# Media por horas de las señales
 df = df.groupby('date').mean()
 
 ##############################################################################
