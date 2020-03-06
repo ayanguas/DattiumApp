@@ -13,10 +13,10 @@ import numpy as np
 # Load csv to a DataFrame
 df = pd.read_csv('../data/MiningProcess_Flotation_Plant_Database.csv', nrows=10000)
 
+# Delete of character '%' from DataFrame columns names
 array_columns = []
 for column in df.columns:
     array_columns = np.append(array_columns, column.replace('%', 'Percentage'))
-
 df.columns = array_columns
 
 # Creation conexion to local database, DattiumApp; user=test; pswd=test123
