@@ -346,13 +346,15 @@ def gen_histo2(column, relayout):
     
     if relayout is not None:
         if 'xaxis.range[0]' in relayout.keys():
-            df_hist = df_hist[(df_hist[column]>relayout['xaxis.range[0]']) & (df_hist[column]<relayout['xaxis.range[1]'])]
+            first = round(relayout['xaxis.range[0]'])
+            last = round(relayout['xaxis.range[1]'])
+            df_hist = df_hist.iloc[first:last, :]
             print(df_hist[column].max())
             print(relayout['xaxis.range[1]'])
             print(relayout['xaxis.range[0]'])
             print(df_hist[column].min())
     
-    trace2 = dict(
+    trace = dict(
         type="histogram",
         x=df_hist[column],
         xbins=dict(
@@ -363,17 +365,25 @@ def gen_histo2(column, relayout):
         # autobinx=False,
         # bingroup=1,
         histnorm='probability',
-        label='historical',
+        label='Selected',
     )
     
-    layout2=dict(
+    trace2 = dict(
+        type="histogram",
+        x=df_raw[column],
+        opacity=0.001,
+        visible=True,
+        histnorm='probability',
+    )
+    
+    layout=dict(
         barmode='overlay',
         height=700,
         plot_bgcolor=app_color["graph_bg"],
         paper_bgcolor=app_color["graph_bg"],
         font={"color": colors['text']},
     )
-    return [dict(data=[trace2], layout=layout2)]
+    return [dict(data=[trace, trace2], layout=layout)]
 
 
 if __name__ == '__main__':
