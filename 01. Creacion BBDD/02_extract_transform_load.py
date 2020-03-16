@@ -34,6 +34,10 @@ df = pd.read_sql('SELECT * FROM raw', local_conn, parse_dates='date')
 
 # Media por horas de las señales
 df = df.groupby('date').mean()
+df['label_S1'] = np.random.choice(3, len(df), p=[0.05, 0.15, 0.8])
+df['label_S2'] = np.random.choice(3, len(df), p=[0.05, 0.15, 0.8])
+df['label_S3'] = np.random.choice(3, len(df), p=[0.05, 0.15, 0.8])
+df['label'] = df['label_S1'] + df['label_S2'] + df['label_S3']
 
 ##############################################################################
 #                               03_LOAD                                      #
