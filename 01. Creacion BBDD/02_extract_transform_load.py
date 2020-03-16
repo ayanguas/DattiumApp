@@ -10,6 +10,15 @@ import pandas as pd
 from sqlalchemy import create_engine
 import numpy as np
 
+# Cambiar a False para conectarse a un servidor remoto y modificar 
+# la ip con la dirección del servidor
+local = True
+
+if not local:
+    ip = '192.168.1.33'
+else:
+    ip = '127.0.0.1'
+
 ##############################################################################
 #                              01_EXTRACT                                    #
 ##############################################################################
@@ -17,7 +26,7 @@ import numpy as np
 # Conexion creation to local database, DattiumApp; user=test; pswd=test123
 local_conn = create_engine('postgresql://test:test123@127.0.0.1:5432/DattiumApp')
 # Extract all rows from signals
-df = pd.read_sql('SELECT * FROM signals', local_conn, parse_dates='date')
+df = pd.read_sql('SELECT * FROM raw', local_conn, parse_dates='date')
 
 ##############################################################################
 #                             02_TRANSFORM                                   #
@@ -30,6 +39,6 @@ df = df.groupby('date').mean()
 #                               03_LOAD                                      #
 ##############################################################################
 # Conexion creation to server (192.168.1.33) database, DattiumApp; user=test; pswd=test123
-server_conn = create_engine('postgresql://test:test123@192.168.1.33:5432/DattiumApp')
+server_conn = create_engine('postgresql://test:test123@{}:5432/DattiumApp'.format(ip))
 # Load transformed DataFrame to server
 df.to_sql(name='signals', con=server_conn, if_exists='replace')
