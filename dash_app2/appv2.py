@@ -6,7 +6,6 @@ Created on Fri Mar  6 11:40:57 2020
 @author: albertoyanguasrovira
 """
 
-# -*- coding: utf-8 -*-
 import os
 import pandas as pd
 import dash
@@ -19,9 +18,11 @@ from sqlalchemy import create_engine
 import json
 from textwrap import dedent as d
 
+ip = '127.0.0.1' #192.168.1.37
+
 external_stylesheets =  [dbc.themes.BOOTSTRAP] #['https://codepen.io/chriddyp/pen/bWLwgP.css'] #["https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"]
 
-server_conn = create_engine('postgresql://test:test123@192.168.1.37:5432/DattiumApp')
+server_conn = create_engine('postgresql://test:test123@{}:5432/DattiumApp'.format(ip))
 df_raw = pd.read_sql(('SELECT * FROM signals'), server_conn)
 columns = list(df_raw.columns)[1:len(df_raw.columns)]
 
@@ -387,4 +388,4 @@ def gen_histo2(column, relayout):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
