@@ -26,4 +26,4 @@ df.columns = array_columns
 conn = create_engine('postgresql://test:test123@127.0.0.1:5432/DattiumApp')
 
 # Create a table with df 
-df.to_sql(name='signals', con=conn, if_exists = 'replace', index=False)
+df.to_sql(name='raw', con=conn, if_exists = 'replace', index=False)
