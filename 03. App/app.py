@@ -49,7 +49,7 @@ app.layout = html.Div([
     dbc.Navbar([
         html.A(
             # Use row and col to control vertical alignment of logo / brand
-            html.Img(src=app.get_asset_url("Logotipo-Dattium_13x46.png"),\
+            html.Img(src=app.get_asset_url("logo-dattium-navbar.png"),\
                                      height="30px"),
             href="https://www.dattium.com",
             className='float-right'
@@ -107,9 +107,13 @@ def gen_signal(interval):
     df = pd.read_sql(('SELECT * FROM signals LIMIT 100 OFFSET %s' % (interval)), server_conn)
     trace = dict(
         type="scatter",
+        ids=df.index,
         y=df[column],
         line={"color": "dimgray"},
-        hoverinfo="skip",
+        s1=df['label_S1'],
+        hoverinfo='text',
+        hovertext = ['all: {} \n S1: {} \n S2: {} \n S3: {}'.format(row['label'], row['label_S1'], row['label_S2'], row['label_S3']) \
+                     for index, row in df.iterrows()],
         # error_y={
         #     "type": "data",
         #     "array": df["SpeedError"],
@@ -118,6 +122,7 @@ def gen_signal(interval):
         #     "color": "#B4E8FC",
         # },
         mode="markers",
+        name='Label',
     )
     
     trace2 = dict(
