@@ -18,7 +18,7 @@ from sqlalchemy import create_engine
 import json
 from textwrap import dedent as d
 
-ip = '127.0.0.1'
+postgre_ip = '127.0.0.1'
 
 external_stylesheets =  [dbc.themes.BOOTSTRAP] #['https://codepen.io/chriddyp/pen/bWLwgP.css'] #["https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"]
 
@@ -29,7 +29,7 @@ colors = {
 
 app_color = {"graph_bg": "#HFHFHF", "graph_line": "#007ACE"}
 
-server_conn = create_engine('postgresql://test:test123@{}:5432/DattiumApp'.format(ip))
+server_conn = create_engine('postgresql://test:test123@{}:5432/DattiumApp'.format(postgre_ip))
 df_raw = pd.read_sql(('SELECT * FROM signals'), server_conn)
 columns = list(df_raw.columns)[1:len(df_raw.columns)]
 
@@ -41,20 +41,28 @@ USERNAME_PASSWORD_PAIRS = [
 ]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app.config.suppress_callback_exceptions = True
 auth = dash_auth.BasicAuth(app,USERNAME_PASSWORD_PAIRS)
 server = app.server
 
 app.layout = html.Div([
-    # Barra de navegación de la aplicación
-    dbc.Navbar([
+    dcc.Location(id='url', refresh=False),
+    html.Div(id='page-content')
+])
+
+navbar = dbc.Navbar([
         html.A(
             # Use row and col to control vertical alignment of logo / brand
             html.Img(src=app.get_asset_url("logo-dattium-navbar.png"),\
                                      height="30px"),
-            href="https://www.dattium.com",
+            href="/",
             className='float-right'
         ),
-    ]),
+    ])
+
+page_1_layout = html.Div([
+    # Barra de navegación de la aplicación
+    navbar,
     
     # Content
     dbc.Container([
@@ -88,7 +96,9 @@ app.layout = html.Div([
         html.Div([
             html.Img(src=app.get_asset_url("plant-diagram.png"), className='mx-auto d-block')
         ], className = 'row'), 
-    ], className = 'container'),    
+    ], className = 'container'),   
+    html.Br(),
+    dcc.Link('Go to page 1', href='/page-1'),
 ])
 
 @app.callback(
@@ -110,9 +120,8 @@ def gen_signal(interval):
         ids=df.index,
         y=df[column],
         line={"color": "dimgray"},
-        s1=df['label_S1'],
         hoverinfo='text',
-        hovertext = ['all: {} \n S1: {} \n S2: {} \n S3: {}'.format(row['label'], row['label_S1'], row['label_S2'], row['label_S3']) \
+        hovertext = ['<b>Id</b>: {}<br><b>All</b>: {}<br><b>S1</b>: {}<br><b>S2</b>: {}<br><b>S3</b>: {}'.format(row['id'],row['label'], row['label_S1'], row['label_S2'], row['label_S3']) \
                      for index, row in df.iterrows()],
         # error_y={
         #     "type": "data",
@@ -210,6 +219,79 @@ def gen_signal(interval):
     )
 
     return [dict(data=[trace, trace2, trace3], layout=layout)]
+
+@app.callback([Output('url', 'pathname'), Output('list-fallos-s1')],
+              [Input('plant-plot', 'clickData')])
+def change_page(click_data):
+    if click_data is not None:
+        if 'points' in click_data.keys():
+            if 'id' in click_data['points'][0].keys():
+                print(click_data['points'][0]['id'])
+    return '/page-1'
+
+page_2_layout = html.Div([
+    navbar,
+    dbc.Tabs([
+        dbc.Tab(label='S1', children = [
+            html.Img(src=app.get_asset_url("plant-s1.png"), className='mx-auto d-block'),
+            html.H1('Seccion 1', id='header-s1', className='text-center'),
+            html.Div([
+                html.Div([
+                    html.H2('Desviaciones', className='text-center'),
+                    dbc.ListGroup(children=[
+                        dbc.ListGroupItem(
+                            "Button", id="desviacion-s1-item", n_clicks=0, action=True, className='text-center',
+                        ),
+                    ], id='list-desviaciones-s1'),     
+                ], className='col-6'),
+                html.Div([
+                    html.H2('Fallos de registro/sensor', className='text-center'),
+                    dbc.ListGroup(children=[
+                        dbc.ListGroupItem(
+                            "Button", id="fallo-s1-item", n_clicks=0, action=True, className='text-center',
+                        ),
+                    ], id='list-fallos-s1'),     
+                ], className='col-6'),
+                
+            ], className='row'),
+        ]),
+        dbc.Tab(label='S2', children = [
+            html.Img(src=app.get_asset_url("plant-s2.png"), className='mx-auto d-block'),
+            html.H1('Seccion 2', id='header-s2', className='text-center'),
+            html.Div([
+                html.Div([
+                    html.H2('Desviaciones', className='text-center'),
+                    dbc.ListGroup(children=[
+                        dbc.ListGroupItem(
+                            "Button", id="desviacion-s2-item", n_clicks=0, action=True, className='text-center',
+                        ),
+                    ], id='list-desviaciones-s2'),     
+                ], className='col-6'),
+                html.Div([
+                    html.H2('Fallos de registro/sensor', className='text-center'),
+                    dbc.ListGroup(children=[
+                        dbc.ListGroupItem(
+                            "Button", id="fallo-s2-item", n_clicks=0, action=True, className='text-center',
+                        ),
+                    ], id='list-fallos-s1'),     
+                ], className='col-6'),
+                
+            ], className='row'),
+        ]),
+    ], id='tab-seccions'),
+    html.Br(),
+    dcc.Link('Go back to home', href='/')
+])
+
+# Update the index
+@app.callback(Output('page-content', 'children'),
+              [Input('url', 'pathname')])
+def display_page(pathname):
+    if pathname == '/page-1':
+        return page_2_layout
+    else:
+        return page_1_layout
+    # You could also return a 404 "URL not found" page here
 
 if __name__ == '__main__':
     app.run_server(debug=False)
