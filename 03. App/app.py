@@ -257,7 +257,7 @@ def change_page(click_data):
                 fal_s2 = get_cards_layout(col_fal_s2)
                 print(des_s1)
                 print(click_data['points'][0]['id'])
-    return [{'des_s1': (des_s1), 'fal_s1': (fal_s1)}, '/page-1']
+    return [{'des_s1': (des_s1), 'fal_s1': (fal_s1), 'des_s2': (des_s2), 'fal_s2': (fal_s2)}, '/page-1']
 
 page_2_layout = html.Div([
     navbar,
@@ -290,23 +290,24 @@ page_2_layout = html.Div([
             html.Img(src=app.get_asset_url("plant-s2.png"), className='mx-auto d-block'),
             html.H1('Seccion 2', id='header-s2', className='text-center'),
             html.Div([
-                html.Div([
+                html.Div(className='col-1'),
+                dbc.Card([
+                    html.Br(),
                     html.H2('Desviaciones', className='text-center'),
-                    dbc.ListGroup(children=[
-                        dbc.ListGroupItem(
-                            "Button", id="desviacion-s2-item", n_clicks=0, action=True, className='text-center',
-                        ),
-                    ], id='list-desviaciones-s2'),     
-                ], className='col-6'),
-                html.Div([
+                    html.Br(),
+                    dbc.ListGroup(id='list-des-s2'),
+                    # dbc.ListGroup(id='list-desviaciones-s1'),  
+                    html.Br()
+                ], className='col-4', color='warning', outline=True),                
+                html.Div(className='col-2 rounded'),
+                dbc.Card([
+                    html.Br(),
                     html.H2('Fallos de registro/sensor', className='text-center'),
-                    dbc.ListGroup(children=[
-                        dbc.ListGroupItem(
-                            "Button", id="fallo-s2-item", n_clicks=0, action=True, className='text-center',
-                        ),
-                    ], id='list-fallos-s2'),     
-                ], className='col-6'),
-                
+                    html.Br(),
+                    dbc.ListGroup(id='list-fal-s2'), 
+                    html.Br()
+                ], className='col-4', color='danger', outline=True),
+                html.Div(className='col-1'),
             ], className='row'),
         ]),
     ], id='tab-seccions'),
@@ -316,18 +317,56 @@ page_2_layout = html.Div([
 @app.callback(Output('list-des-s1', 'children'),
               [Input('store-p2-layout', 'modified_timestamp')],
               [State('store-p2-layout', 'data')])
-def modify_lists_p2(timestamp, data):
-    print('hey')
-    no_data = dbc.ListGroupItem("No hay ningúna señal desviada", id="desviacion-s1-item", color='success', className='text-center')
-    return_data_0 = no_data
-    return_data_1 = no_data
-    if 'des_s1' in data.keys():
-        return_data_0 = data['des_s1']
-    if 'fal_s1' in data.keys():
-        return_data_1 = data['fal_s1']
-    return return_data_0
-    
-    
+def modify_lists_des_s1(timestamp, data):
+    no_data = dbc.ListGroupItem("No hay ningúna señal desviada", color='success', className='text-center')
+    if data is not None:
+        return_data = no_data
+        if 'des_s1' in data.keys():
+            return_data = data['des_s1']
+        return return_data
+    else: 
+        return no_data
+
+@app.callback(Output('list-fal-s1', 'children'),
+              [Input('store-p2-layout', 'modified_timestamp')],
+              [State('store-p2-layout', 'data')])
+def modify_lists_fal_s1(timestamp, data):
+    no_data = dbc.ListGroupItem("No hay ningúna señal desviada", color='success', className='text-center')
+    if data is not None:
+        return_data = no_data
+        if 'fal_s1' in data.keys():
+            return_data = data['fal_s1']
+        return return_data
+    else: 
+        return no_data
+
+@app.callback(Output('list-des-s2', 'children'),
+              [Input('store-p2-layout', 'modified_timestamp')],
+              [State('store-p2-layout', 'data')])
+def modify_lists_des_s2(timestamp, data):
+    no_data = dbc.ListGroupItem("No hay ningúna señal desviada", color='success', className='text-center')
+    if data is not None:
+        return_data = no_data
+        if 'des_s2' in data.keys():
+            return_data = data['des_s2']
+        return return_data
+    else: 
+        return no_data
+
+@app.callback(Output('list-fal-s2', 'children'),
+              [Input('store-p2-layout', 'modified_timestamp')],
+              [State('store-p2-layout', 'data')])
+def modify_lists_fal_s2(timestamp, data):
+    print(timestamp)
+    no_data = dbc.ListGroupItem("No hay ningúna señal desviada", color='success', className='text-center')
+    if data is not None:
+        return_data = no_data
+        if 'fal_s2' in data.keys():
+            return_data = data['fal_s2']
+        return return_data
+    else: 
+        return no_data
+
 # Update the index
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
@@ -339,4 +378,4 @@ def display_page(pathname):
     # You could also return a 404 "URL not found" page here
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
