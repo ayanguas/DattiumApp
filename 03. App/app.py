@@ -8,6 +8,7 @@ Created on Fri Mar  6 11:40:57 2020
 
 import os
 import pandas as pd
+import numpy as np
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -17,6 +18,7 @@ import dash_auth
 from sqlalchemy import create_engine
 import json
 from textwrap import dedent as d
+from numpy.random import randint
 
 postgre_ip = '127.0.0.1'
 
@@ -29,9 +31,26 @@ colors = {
 
 app_color = {"graph_bg": "#HFHFHF", "graph_line": "#007ACE"}
 
+
+def get_columns(df, seccion):
+    columns_fallo=columns[randint(len(columns), size=(randint(5)), dtype='int')]
+    columns_desviacion=columns[randint(len(columns), size=(randint(5)), dtype='int')]
+    return [columns_fallo, columns_desviacion]
+
+def get_cards_layout(columns):
+    children = []
+    if len(columns)>0:
+        i = 1
+        for column in columns:
+            children.append(dbc.ListGroupItem(column, className='text-center', id='list-item-{}'.format(i)))
+            i+=1
+        return children
+    else:
+        return dbc.ListGroupItem("No hay ningúna señal desviada", className='text-center', color='success', id='list-item-1')
+
 server_conn = create_engine('postgresql://test:test123@{}:5432/DattiumApp'.format(postgre_ip))
 df_raw = pd.read_sql(('SELECT * FROM signals'), server_conn)
-columns = list(df_raw.columns)[1:len(df_raw.columns)]
+columns = np.array(list(df_raw.columns)[1:len(df_raw.columns)])
 
 # Evento para el refresco del grafico principal
 GRAPH_INTERVAL = os.environ.get("GRAPH_INTERVAL", 3000)
@@ -46,6 +65,7 @@ auth = dash_auth.BasicAuth(app,USERNAME_PASSWORD_PAIRS)
 server = app.server
 
 app.layout = html.Div([
+    dcc.Store(id='store-p2-layout'),
     dcc.Location(id='url', refresh=False),
     html.Div(id='page-content')
 ])
@@ -220,14 +240,24 @@ def gen_signal(interval):
 
     return [dict(data=[trace, trace2, trace3], layout=layout)]
 
-@app.callback([Output('url', 'pathname'), Output('list-fallos-s1')],
+@app.callback([Output('store-p2-layout', 'data'), Output('url', 'pathname')],
               [Input('plant-plot', 'clickData')])
 def change_page(click_data):
+    des_s1 =  dbc.ListGroupItem("No hay ningúna señal desviada", id="desviacion-s1-item", className='text-center')
     if click_data is not None:
         if 'points' in click_data.keys():
             if 'id' in click_data['points'][0].keys():
+                point_id = click_data['points'][0]['id']
+                selected_data = pd.read_sql(('SELECT * FROM signals WHERE id=%s' % (point_id)), server_conn)
+                [col_fal_s1, col_des_s1] = get_columns(selected_data, 's1')
+                [col_fal_s2, col_des_s2] = get_columns(selected_data, 's2')
+                des_s1 = get_cards_layout(col_des_s1)
+                fal_s1 = get_cards_layout(col_fal_s1)
+                des_s2 = get_cards_layout(col_des_s2)
+                fal_s2 = get_cards_layout(col_fal_s2)
+                print(des_s1)
                 print(click_data['points'][0]['id'])
-    return '/page-1'
+    return [{'des_s1': (des_s1), 'fal_s1': (fal_s1)}, '/page-1']
 
 page_2_layout = html.Div([
     navbar,
@@ -236,23 +266,24 @@ page_2_layout = html.Div([
             html.Img(src=app.get_asset_url("plant-s1.png"), className='mx-auto d-block'),
             html.H1('Seccion 1', id='header-s1', className='text-center'),
             html.Div([
-                html.Div([
+                html.Div(className='col-1'),
+                dbc.Card([
+                    html.Br(),
                     html.H2('Desviaciones', className='text-center'),
-                    dbc.ListGroup(children=[
-                        dbc.ListGroupItem(
-                            "Button", id="desviacion-s1-item", n_clicks=0, action=True, className='text-center',
-                        ),
-                    ], id='list-desviaciones-s1'),     
-                ], className='col-6'),
-                html.Div([
+                    html.Br(),
+                    dbc.ListGroup(id='list-des-s1'),
+                    # dbc.ListGroup(id='list-desviaciones-s1'),  
+                    html.Br()
+                ], className='col-4', color='warning', outline=True),                
+                html.Div(className='col-2 rounded'),
+                dbc.Card([
+                    html.Br(),
                     html.H2('Fallos de registro/sensor', className='text-center'),
-                    dbc.ListGroup(children=[
-                        dbc.ListGroupItem(
-                            "Button", id="fallo-s1-item", n_clicks=0, action=True, className='text-center',
-                        ),
-                    ], id='list-fallos-s1'),     
-                ], className='col-6'),
-                
+                    html.Br(),
+                    dbc.ListGroup(id='list-fal-s1'), 
+                    html.Br()
+                ], className='col-4', color='danger', outline=True),
+                html.Div(className='col-1'),
             ], className='row'),
         ]),
         dbc.Tab(label='S2', children = [
@@ -273,7 +304,7 @@ page_2_layout = html.Div([
                         dbc.ListGroupItem(
                             "Button", id="fallo-s2-item", n_clicks=0, action=True, className='text-center',
                         ),
-                    ], id='list-fallos-s1'),     
+                    ], id='list-fallos-s2'),     
                 ], className='col-6'),
                 
             ], className='row'),
@@ -282,7 +313,21 @@ page_2_layout = html.Div([
     html.Br(),
     dcc.Link('Go back to home', href='/')
 ])
-
+@app.callback(Output('list-des-s1', 'children'),
+              [Input('store-p2-layout', 'modified_timestamp')],
+              [State('store-p2-layout', 'data')])
+def modify_lists_p2(timestamp, data):
+    print('hey')
+    no_data = dbc.ListGroupItem("No hay ningúna señal desviada", id="desviacion-s1-item", color='success', className='text-center')
+    return_data_0 = no_data
+    return_data_1 = no_data
+    if 'des_s1' in data.keys():
+        return_data_0 = data['des_s1']
+    if 'fal_s1' in data.keys():
+        return_data_1 = data['fal_s1']
+    return return_data_0
+    
+    
 # Update the index
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
