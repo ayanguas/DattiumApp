@@ -22,7 +22,7 @@ Por defecto PostgreSQL está configurado para trabajar solo en local, para poder
 
 ## Creación de la BBDD y preparación de los datos
 
-Antes de ejecutar los scripts se debe descomprimir el archivo ***MiningProcess_Flotation_Plant_Database.csv.zip*** que se encuentra en la carpeta **data**. En la carpeta **01. Creacion BBDD** encontraremos dos scripts, que antes de ejecutar la aplicación deben ser ejecutados. En primer lugar se debe ejecutar ***01_local_db_creation.py***, este nos creara una BBDD con el raw data del data set utilizado. En segundo lugar, se debe ejecutar ***02_extract_transform_load.py***, este nos creara una segunda BBDD con los datos ya transformados y preparados para el uso de la aplicación.
+Antes de ejecutar los scripts se debe descomprimir el archivo ***MiningProcess_Flotation_Plant_Database.csv.zip*** que se encuentra en la carpeta **data**. En la carpeta **01. Creacion BBDD** encontraremos dos scripts. En primer lugar se debe ejecutar ***01_local_db_creation.py***, este nos creara una BBDD con el raw data del data set utilizado. En segundo lugar, se debe ejecutar ***02_extract_transform_load.py***, este nos creara una segunda BBDD con los datos ya transformados y preparados para el uso de la aplicación.
 
 ## Ejecución de la APP
 
