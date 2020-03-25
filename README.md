@@ -20,6 +20,10 @@ Por defecto PostgreSQL está configurado para trabajar solo en local, para poder
   
 [Reference](https://blog.bigbinary.com/2016/01/23/configure-postgresql-to-allow-remote-connection.html)
 
+## Creación de la BBDD y preparación de los datos
+
+En la carpeta **01. Creacion BBDD** encontraremos dos scripts, que antes de ejecutar la aplicación deben ser ejecutados. En primer lugar se debe ejecutar ***01_local_db_creation.py*** este nos creara una BBDD con el raw data del data set utilizado. En segundo lugar, se debe ejecutar ***02_extract_transform_load.py*** este nos creara una segunda BBDD con los datos ya transformados y preparados para el uso de la aplicación.
+
 ## Ejecución de la APP
 
 Una vez ya se tiene instalado PostgreSQL y cargado los datos a la BBDD. Ya se puede ejecutar el script ***app.py***, abrir el navegador y entrar a la siguiente direccion http://127.0.0.1:8050/, dónde se estará ejecutando la aplicación.
