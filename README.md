@@ -26,4 +26,4 @@ En la carpeta **01. Creacion BBDD** encontraremos dos scripts, que antes de ejec
 
 ## Ejecución de la APP
 
-Una vez ya se tiene instalado PostgreSQL y cargado los datos a la BBDD. Ya se puede ejecutar el script ***app.py***, abrir el navegador y entrar a la siguiente direccion http://127.0.0.1:8050/, dónde se estará ejecutando la aplicación.
+Una vez ya se tiene instalado PostgreSQL y cargado los datos a la BBDD. Ya se puede ejecutar el script ***app.py***, que se encuentra en la carpeta **03. App**, una vez ejecutado el script, se debe abrir el navegador y entrar a la siguiente direccion http://127.0.0.1:8050/, dónde se estará ejecutando la aplicación.
