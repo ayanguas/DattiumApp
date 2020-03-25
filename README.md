@@ -19,3 +19,7 @@ Por defecto PostgreSQL está configurado para trabajar solo en local, para poder
   
   
 [Reference](https://blog.bigbinary.com/2016/01/23/configure-postgresql-to-allow-remote-connection.html)
+
+## Ejecución de la APP
+
+Una vez ya se tiene instalado PostgreSQL y cargado los datos a la BBDD. Ya se puede ejecutar el script ***app.py***, abrir el navegador y entrar a la siguiente direccion http://127.0.0.1:8050/, dónde se estará ejecutando la aplicación.
