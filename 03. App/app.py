@@ -127,6 +127,9 @@ page_1_layout = html.Div([
                     'margin-top': '30px'
                     },
             ),
+            # Boton de pausa para pausar el gráfico
+            dbc.Button("Stop", id="example-button", className="mr-2"),
+            html.Br(),
             # Gráfico general del comportamiento de la planta
             dcc.Graph(
                 id="plant-plot",
@@ -150,6 +153,19 @@ page_1_layout = html.Div([
         ], className = 'row'), 
     ], className = 'container'),   
 ])
+
+# Callback que pausa la actualización automática del gráfico
+@app.callback(
+    [Output("signal-update", "disabled"), Output("example-button", "children")], 
+    [Input("example-button", "n_clicks")],
+    [State("signal-update", "disabled")]
+)
+def enable_update(n, disabled):
+    children = "Play"
+    if n is not None:
+        if disabled:
+            children="Stop"
+        return (not disabled), children
 
 # Callback que actualiza el gráfica cada X segundos
 @app.callback(
