@@ -127,6 +127,9 @@ page_1_layout = html.Div([
                     'margin-top': '30px'
                     },
             ),
+            # Boton de pausa para pausar el gráfico
+            dbc.Button("Pause", id="example-button", className="mr-2"),
+            html.Br(),
             # Gráfico general del comportamiento de la planta
             dcc.Graph(
                 id="plant-plot",
@@ -150,6 +153,19 @@ page_1_layout = html.Div([
         ], className = 'row'), 
     ], className = 'container'),   
 ])
+
+# Callback que pausa la actualización automática del gráfico
+@app.callback(
+    [Output("signal-update", "disabled"), Output("example-button", "children")], 
+    [Input("example-button", "n_clicks")],
+    [State("signal-update", "disabled")]
+)
+def enable_update(n, disabled):
+    children = "Play"
+    if n is not None:
+        if disabled:
+            children="Pause"
+        return (not disabled), children
 
 # Callback que actualiza el gráfica cada X segundos
 @app.callback(
@@ -295,6 +311,7 @@ page_2_layout = html.Div([
             html.H1('Seccion 1', id='header-s1', className='text-center'),
             # Listas de desviacion y fallos de registro/sensor S1
             html.Div([
+                
                  # Lista de desviacion S1
                 html.Div(className='col-1'),
                 dbc.Card([
@@ -303,9 +320,26 @@ page_2_layout = html.Div([
                     html.Br(),
                     dbc.ListGroup(id='list-des-s1'),
                     html.Br()
-                ], className='col-4', color='warning', outline=True),  
-                 # Lista de fallos de registro/sensor S1
-                html.Div(className='col-2 rounded'),
+                ], className='col-4', color='warning', outline=True),
+                
+                # Carta informativa de la ID seleccionada S1
+                html.Div([
+                    dbc.Card([
+                        dbc.Row([
+                            html.Div(className='col-1'),
+                            html.Div([
+                                html.Br(),
+                                html.H5("Información de la barra", className='text-center'),
+                                html.Br(),
+                                html.P("ID: ********", className='card-text text-center', id='card_info_id_s1'),
+                                html.Br()
+                            ], className='col-10'),
+                            html.Div(className='col-1'),
+                        ]),
+                    ], outline=True)
+                ],className='col-2 rounded d-flex justify-content-center align-items-center'),
+                
+                # Lista de fallos de registro/sensor S1
                 dbc.Card([
                     html.Br(),
                     html.H2('Fallos de registro/sensor', className='text-center'),
@@ -328,6 +362,7 @@ page_2_layout = html.Div([
             html.Div([
                 # Plot señal S1
                 html.Div([
+                        # Título del gráfico S1
                         html.H3(
                             id='header-signal-plot-s1',
                             children='Signal plot',
@@ -336,6 +371,7 @@ page_2_layout = html.Div([
                                 'color': colors['text']
                                 }
                         ),
+                        # Gráfico S1
                         dcc.Graph(
                             id="signal-s1",
                             figure=dict(
@@ -345,28 +381,32 @@ page_2_layout = html.Div([
                                 )
                             ),
                         ),
+                        
                     ],className='signal-plot col-7'),
+                
                 # Plot histograma S1
                 html.Div([
+                    # Título del histograma de S1
                     html.H3(
-                            id='header-histogram-s1',
-                            children='Histogram',
-                            style={
-                                'textAlign': 'center',
-                                'color': colors['text']
-                            }
+                        id='header-histogram-s1',
+                        children='Histogram',
+                        style={
+                            'textAlign': 'center',
+                            'color': colors['text']
+                        }
+                    ),
+                    # Histograma de S1
+                    dcc.Graph(
+                        id="histogram-s1",
+                        figure=dict(
+                            layout=dict(
+                                barmode='overlay',
+                                plot_bgcolor=app_color["graph_bg"],
+                                paper_bgcolor=app_color["graph_bg"],
+                            )
                         ),
-                        dcc.Graph(
-                            id="histogram-s1",
-                            figure=dict(
-                                layout=dict(
-                                    barmode='overlay',
-                                    plot_bgcolor=app_color["graph_bg"],
-                                    paper_bgcolor=app_color["graph_bg"],
-                                )
-                            ),
-                        ),
-                    ],className='histogram-plot col-5'),
+                    ),
+                ],className='histogram-plot col-5'),
             ], id='graficos-s1', className='row'),
         ]),
         # Tab S2
@@ -377,7 +417,8 @@ page_2_layout = html.Div([
             html.H1('Seccion 2', id='header-s2', className='text-center'),
             # Listas de desviacion y fallos de registro/sensor S1
             html.Div([
-                # Lista de desviacion
+                
+                # Lista de desviacion S2
                 html.Div(className='col-1'),
                 dbc.Card([
                     html.Br(),
@@ -389,8 +430,25 @@ page_2_layout = html.Div([
                     # dbc.ListGroup(id='list-desviaciones-s1'),  
                     html.Br()
                 ], className='col-4', color='warning', outline=True), 
-                # Lista de fallos de registro/sensor S1
-                html.Div(className='col-2 rounded'),
+                
+                # Carta informativa de la ID seleccionada S2
+                html.Div([
+                    dbc.Card([
+                        dbc.Row([
+                            html.Div(className='col-1'),
+                            html.Div([
+                                html.Br(),
+                                html.H5("Información de la barra", className='text-center'),
+                                html.Br(),
+                                html.P("ID: ********", className='card-text text-center', id='card_info_id_s2'),
+                                html.Br()
+                            ], className='col-10'),
+                            html.Div(className='col-1'),
+                        ]),
+                    ], outline=True)
+                ],className='col-2 rounded d-flex justify-content-center align-items-center'),
+                
+                # Lista de fallos de registro/sensor S2
                 dbc.Card([
                     html.Br(),
                     # Titulo de la lista
@@ -407,7 +465,7 @@ page_2_layout = html.Div([
             dcc.Dropdown(
                 id="signal-dropdown-s2",
                 options=[{'label': x, 'value': x} for x in columns_s2],
-                value='Amina Flow',
+                value='Percentage Iron Concentrate',
                 style={
                     'color': colors['text']
                 },
@@ -415,7 +473,7 @@ page_2_layout = html.Div([
             html.Div([
                 # Plot señal S1
                 html.Div([
-                    # Titulo de la señal
+                    # Titulo del gráfico S2
                     html.H3(
                         id='header-signal-plot-s2',
                         children='Signal plot',
@@ -424,7 +482,7 @@ page_2_layout = html.Div([
                             'color': colors['text']
                             }
                     ),
-                    # Grafico de la señal
+                    # Gráfico S2
                     dcc.Graph(
                         id="signal-s2",
                         figure=dict(
@@ -437,25 +495,27 @@ page_2_layout = html.Div([
                 ],className='signal-plot col-7'),
                 # Plot histograma S1
                 html.Div([
+                    # Titulo del histograma S2
                     html.H3(
-                            id='header-histogram-s2',
-                            children='Histogram',
-                            style={
-                                'textAlign': 'center',
-                                'color': colors['text']
-                            }
+                        id='header-histogram-s2',
+                        children='Histogram',
+                        style={
+                            'textAlign': 'center',
+                            'color': colors['text']
+                        }
+                    ),
+                    # Histograma S2
+                    dcc.Graph(
+                        id="histogram-s2",
+                        figure=dict(
+                            layout=dict(
+                                barmode='overlay',
+                                plot_bgcolor=app_color["graph_bg"],
+                                paper_bgcolor=app_color["graph_bg"],
+                            )
                         ),
-                        dcc.Graph(
-                            id="histogram-s2",
-                            figure=dict(
-                                layout=dict(
-                                    barmode='overlay',
-                                    plot_bgcolor=app_color["graph_bg"],
-                                    paper_bgcolor=app_color["graph_bg"],
-                                )
-                            ),
-                        ),
-                    ],className='histogram-plot col-5'),
+                    ),
+                ],className='histogram-plot col-5'),
             ], id='graficos-s2', className='row'),
         ]),
     ], id='tab-seccions'),
@@ -463,6 +523,17 @@ page_2_layout = html.Div([
     dcc.Link('Go back to home', href='/')
 ])
 
+# Callback que actualiza la targeta de información de ID
+@app.callback([Output('card_info_id_s1', 'children'), Output('card_info_id_s2', 'children')],
+              [Input('store-id-clicked', 'modified_timestamp')],
+              [State('store-id-clicked', 'data')])
+def modify_lists_des_s1(timestamp, id_data):
+    return_data = "ID: ********"
+    if id_data is not None:
+        if 'id' in id_data.keys():
+            return_data = "ID: {}".format(id_data['id'])
+        return return_data, return_data
+    
 # Callback que actualiza la lista de desviaciones de S1
 @app.callback(Output('list-des-s1', 'children'),
               [Input('store-p2-layout', 'modified_timestamp')],
