@@ -11,8 +11,8 @@ Aplicación de visualización en la nube de Dattium
 2. Instalar [*PostgreSQL*](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads) version 12.
 3. Abrir PgAdmin, programa para la gestión de los servidores y BBDD *PostgreSQL.
 4. Crear la BBDD en el servidor PostgreSQL 12
-    4.1. Click derecho sobre PostgreSQL 12 y seleccionamos crear una nueva BBDD con el nombre **DattiumApp**
-    4.2. Click derecho sobre la PostgreSQL 12 y seleccionamos crear un nuevo Login/Role Group con nombre de usuario **test** y password **test123** (se cambia en la pestaña *Definition*), finalmente le damos todos los permisos, en la pestaña *privileges*, habilitaremos las opciones *Can login?* y *Superuser*
+    1. Click derecho sobre PostgreSQL 12 y seleccionamos crear una nueva BBDD con el nombre **DattiumApp**
+    2. Click derecho sobre la PostgreSQL 12 y seleccionamos crear un nuevo Login/Role Group con nombre de usuario **test** y password **test123** (se cambia en la pestaña *Definition*), finalmente le damos todos los permisos, en la pestaña *privileges*, habilitaremos las opciones *Can login?* y *Superuser*
 
 ## I. Creación de la BBDD PostgreSQL
 
