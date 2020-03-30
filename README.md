@@ -7,6 +7,7 @@ Aplicación de visualización en la nube de Dattium
 
 ## Instrucciones
 
+1. Abrir el terminal de conda, utilizando el commando *cd* nos posicionaremos en la carpeta del proyecto y ejecutaremos el siguiente comando: *conda create --name DattiumApp --file dependencies/requirements.txt*
 1. Descomprimir el archivo *MiningProcess_Flotation_Plant_Database.csv.zip*
 2. Instalar [*PostgreSQL*](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads) version 12.
 3. Configuración de *PostgreSQL* [[1]](https://blog.bigbinary.com/2016/01/23/configure-postgresql-to-allow-remote-connection.html)
