@@ -13,6 +13,10 @@ Aplicación de visualización en la nube de Dattium
 4. Crear la BBDD en el servidor PostgreSQL 12
     1. Click derecho sobre PostgreSQL 12 y seleccionamos crear una nueva BBDD con el nombre **DattiumApp**
     2. Click derecho sobre la PostgreSQL 12 y seleccionamos crear un nuevo Login/Role Group con nombre de usuario **test** y password **test123** (se cambia en la pestaña *Definition*), finalmente, le habilitamos todos los permisos, en la pestaña *privileges*, habilitaremos las opciones *Can login?* y *Superuser*
+5. Ejecutamos el script **01. Creacion BBDD/01_local_db_creation.py**
+6. Ejecutamos el script **01. Creacion BBDD/02_extract_transform_load.py**
+7. Ejecutamos el script **03. App/app.py**
+8. Accedemos al browser a: http://127.0.0.1:8050/
 
 ## I. Creación de la BBDD PostgreSQL
 
