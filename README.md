@@ -5,6 +5,12 @@ Aplicación de visualización en la nube de Dattium
 1. [*PostgreSQL*](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
 2. Dataset *Quality Prediction in a Mining Process* se encuentra en un .zip en la carpeta *data*
 
+## Instrucciones
+
+1. Descomprimir el archivo *MiningProcess_Flotation_Plant_Database.csv.zip*
+2. Instalar [*PostgreSQL*](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads) version 12
+3. Abrir PgAdmin
+
 ## Creación de la BBDD PostgreSQL
 
 Para la creación de la BBDD será necesario instalar [*PostgreSQL*](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads) al PC que se vaya a utilizar para el proyecto. Es recomendable utilizar **pgAdmin** para la gestión de los servidores y BBDD *PostgreSQL* (En la propia instalación de PostgreSQL con el link de descarga, ya viene la instalación de pgAdmin).
