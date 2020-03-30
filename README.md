@@ -1,17 +1,17 @@
 # DattiumApp
 Aplicación de visualización en la nube de Dattium
 
-## 1. Dependencias
+## Dependencias
 1. [*PostgreSQL*](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
 2. Dataset *Quality Prediction in a Mining Process* se encuentra en un .zip en la carpeta *data*
 
-## 2. Instrucciones
+## Instrucciones
 
 1. Descomprimir el archivo *MiningProcess_Flotation_Plant_Database.csv.zip*
-2. Instalar y configurar [*PostgreSQL*](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads) version 12, mirar apartado 3 para la configuración.
+2. Instalar y configurar [*PostgreSQL*](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads) version 12, mirar apartado I para la configuración.
 3. Abrir PgAdmin
 
-## 3. Creación de la BBDD PostgreSQL
+## I. Creación de la BBDD PostgreSQL
 
 Para la creación de la BBDD será necesario instalar [*PostgreSQL*](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads) al PC que se vaya a utilizar para el proyecto. Es recomendable utilizar **pgAdmin** para la gestión de los servidores y BBDD *PostgreSQL* (En la propia instalación de PostgreSQL con el link de descarga, ya viene la instalación de pgAdmin).
 
@@ -19,7 +19,7 @@ Si se quiere trabajar en **local**, se debe abrir el programa pgAdmin, entrar de
   1. En el apartado **general**, le damos un nombre al servidor
   2. En el apartado **connection**, en *Host name/adress* añadiremos la IP del servidor y cambiaremos el *Username* y *Password* por el indicado
 
-## 4. Configuración de PostgreSQL para acceso remoto
+## II. Configuración de PostgreSQL para acceso remoto
 
 Por defecto PostgreSQL está configurado para trabajar solo en local, para poder habilitar el acceso remoto se debe configurar de la siguiente manera:
   1. Se debe modificar el archivo *postgresql.conf* y modificar la linea *listen_addres = 'localhost'* por **listen_addres = '*'**
@@ -28,10 +28,10 @@ Por defecto PostgreSQL está configurado para trabajar solo en local, para poder
   
 [Reference](https://blog.bigbinary.com/2016/01/23/configure-postgresql-to-allow-remote-connection.html)
 
-## 5. Creación de la BBDD y preparación de los datos
+## III. Creación de la BBDD y preparación de los datos
 
 Antes de ejecutar los scripts se debe descomprimir el archivo ***MiningProcess_Flotation_Plant_Database.csv.zip*** que se encuentra en la carpeta **data**. En la carpeta **01. Creacion BBDD** encontraremos dos scripts. En primer lugar se debe ejecutar ***01_local_db_creation.py***, este nos creara una BBDD con el raw data del data set utilizado. En segundo lugar, se debe ejecutar ***02_extract_transform_load.py***, este nos creara una segunda BBDD con los datos ya transformados y preparados para el uso de la aplicación.
 
-## 6. Ejecución de la APP
+## IV. Ejecución de la APP
 
 Una vez ya se tiene instalado PostgreSQL y cargado los datos a la BBDD. Ya se puede ejecutar el script ***app.py***, que se encuentra en la carpeta **03. App**, una vez ejecutado el script, se debe abrir el navegador y entrar a la siguiente direccion http://127.0.0.1:8050/, dónde se estará ejecutando la aplicación.
