@@ -16,8 +16,6 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import dash_auth
 from sqlalchemy import create_engine
-import json
-from textwrap import dedent as d
 from numpy.random import randint
 
 # Configurar ip para acceder a los datos de postgreSQL
@@ -28,8 +26,20 @@ external_stylesheets =  [dbc.themes.BOOTSTRAP] #['https://codepen.io/chriddyp/pe
 
 colors = {
     'background': '#EFEFEF',
-    'text': '#111144'
+    'text': '#111144',
+    'plantplot-bg-green': '#F7FAF0', # Plantplot Background Green
+    'plantplot-bg-red': '#F9E9E0', # Plantplot Background Red
+    'plantplot-l-red': '#E46B6B', # Plantplot Line Red
+    'plantplot-mk-green': '#76B7B2', # Plantplot Marker Green
+    'plantplot-mk-red': '#E15759', # Plantplot Merker Red
+    'histogram-act': '#FFA64D', # Histogram Actual
+    'histogram-act-br': '#FF8C1A', # Histogram Actual Border
+    'histogram-hist': '#4DA6FF', # Histogram Historical
+    'histogram-hist-br': '#1A8CFF', # Histogram Historical Border
 }
+
+family_font = 'Arial, sans-serif' # Graph Text Font
+size_font = 18 # Graph Text Size
 
 app_color = {"graph_bg": "#HFHFHF", "graph_line": "#007ACE"}
 
@@ -61,6 +71,20 @@ def get_cards_layout(columns, desviaciones):
         else:
             return dbc.ListGroupItem("No hay ningúna señal con fallos de registro/sensor",\
                                      className='text-center', color='success', id='list-item-1')
+
+# Función que devuelve el texto que ira dentro del recuadro de información de la barra seleccionada page-2
+def get_card_info_layout(id_data, column):
+    df = pd.read_sql('SELECT * FROM signals WHERE id={}'.format(id_data), server_conn)
+    if len(df)==1:
+        text = dcc.Markdown('''**ID**: {}  
+                            **Date**: {}   
+                            **{}**: {:.2f}  '''.format(df['id'].iloc[0], df['date'].iloc[0],\
+                                                                                 column, df[column].iloc[0]))
+    else:
+        text = dcc.Markdown('''**ID**: -  
+                            **Date**: -   
+                            **-**: -  ''')              
+    return text
 
 # Conexion a la BBDD postgreSQL con el usuario test, contraseña test123 y en la BBDD DattiumApp        
 server_conn = create_engine('postgresql://test:test123@{}:5432/DattiumApp'.format(postgre_ip))
@@ -114,7 +138,7 @@ page_1_layout = html.Div([
     navbar,
     
     # Content
-    dbc.Container([
+    html.Div([
         # PLot of general view of plant
         html.Div([
             # Titulo del gráfico
@@ -127,19 +151,36 @@ page_1_layout = html.Div([
                     'margin-top': '30px'
                     },
             ),
-            # Boton de pausa para pausar el gráfico
-            dbc.Button("Pause", id="example-button", className="mr-2"),
             html.Br(),
-            # Gráfico general del comportamiento de la planta
-            dcc.Graph(
-                id="plant-plot",
-                figure=dict(
-                    layout=dict(
-                        plot_bgcolor=app_color["graph_bg"],
-                        paper_bgcolor=app_color["graph_bg"],
-                    )
+            # Gráfico y filtros
+            html.Div([
+                html.Div(className='col-1'),
+                # Gráfico general del comportamiento de la planta
+                dcc.Graph(
+                    id="plant-plot",
+                    figure=dict(
+                        layout=dict(
+                            # plot_bgcolor=app_color["graph_bg"],
+                            # paper_bgcolor=app_color["graph_bg"],
+                        )
+                    ),
+                    className = 'mh-100 col-8',
                 ),
-            ),
+                # Filters
+                html.Div([
+                    html.H4('Filtros'),
+                    html.Br(),
+                    # Boton de pausa para pausar el gráfico
+                    dbc.Button("Pause", id="example-button"),
+                    html.Br(),
+                    html.Br(),
+                    html.H5('Fecha de inicio'),
+                    dbc.Input(type='datetime-local', id='date-min'),
+                    html.Br(),
+                    html.H5('Fecha final'),
+                    dbc.Input(type='datetime-local', id='date-max'),
+                ], className="col-2"),
+            ], className='row mh-100'),
             # Interval, sirve para ir actualizando el gráfico cada GRAPH_INTERVAL ms
             dcc.Interval(
                 id="signal-update",
@@ -147,11 +188,12 @@ page_1_layout = html.Div([
                 n_intervals=0,
             ), 
         ]), 
+        html.Br(),
         # Imagen de la planta
         html.Div([
             html.Img(src=app.get_asset_url("plant-diagram.png"), className='mx-auto d-block')
         ], className = 'row'), 
-    ], className = 'container'),   
+    ], className = ''),   
 ])
 
 # Callback que pausa la actualización automática del gráfico
@@ -167,26 +209,43 @@ def enable_update(n, disabled):
             children="Pause"
         return (not disabled), children
 
-# Callback que actualiza el gráfica cada X segundos
+# Callback que actualiza el gráfica cada X segundos o rango de fechas
 @app.callback(
     [Output("plant-plot", "figure")], 
-    [Input("signal-update", "n_intervals")]
+    [Input("signal-update", "n_intervals"), Input("date-min", "value"), Input("date-max", "value")]
 )
-def gen_signal(interval):
+def gen_signal(interval, datemin, datemax):
     """
     Generate the signal graph.
     :params interval: update the graph based on an interval
+    :params datemin: update the graph based on a date interval
+    :params datemax: update the graph based on a date interval
     """
     # Columna del df que se va a visualizar en el gráfico
     column = 'label'
     
+    if datemin == '':
+        datemin = None
+    if datemax == '':
+        datemax = None
+    
+    if (datemin is None) and (datemax is None):
+        # Consulta a postgreSQL que devuelve las 100 primeras filas con un offset que incrementa cada GRAPH_INTERVALS ms
+        df = pd.read_sql(('SELECT * FROM signals LIMIT 100 OFFSET %s' % (interval)), server_conn)         
+    else:
+        datemin = "'" + datemin.replace('T', ' ') + ":00'"
+        datemax = "'" + datemax.replace('T', ' ') + ":00'"
+        # Consulta a postgreSQL que devuelve
+        df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)  
+    
+    datemin1 = df['date'].min()
+    datemax1 = df['date'].max()
     # total_time = get_current_time()
-    # Hacemos una consulta a postgreSQL que nos devuelve las 100 primeras filas con un offset que incrementa cada GRAPH_INTERVALS ms
-    df = pd.read_sql(('SELECT * FROM signals LIMIT 100 OFFSET %s' % (interval)), server_conn)
     # Scatter plot con del label de comportamiento de la planta
     trace = dict(
         type="scatter",
-        ids=df.index,
+        ids=df['id'],
+        x=df['date'],
         y=df[column],
         line={"color": "dimgray"},
         hoverinfo='text',
@@ -202,68 +261,75 @@ def gen_signal(interval):
         # },
         mode="markers",
         name='Label',
+        marker=dict(
+            color=[colors['plantplot-mk-green'] if x > 3 else colors['plantplot-mk-red'] for x in df['label']],
+            size=10,
+        ),
     )
         
     # Opciones de estilo del gráfico
     layout = dict(
-        plot_bgcolor=app_color["graph_bg"],
-        paper_bgcolor=app_color["graph_bg"],
-        font={"color": colors['text']},
-        height=700,
+        # plot_bgcolor=app_color["graph_bg"],
+        # paper_bgcolor=app_color["graph_bg"],
+        font={"color": colors['text'], "size": size_font, "family": family_font,},
+        height=500,
         xaxis={
-            "range": [0, 100],
+            "range": [datemin1, datemax1],
             "showline": False,
             "zeroline": False,
             "fixedrange": True,
-            "tickvals": [0, 25, 50, 75, 100],
-            "ticktext": ["100", "75", "50", "25", "0"],
+            # "tickvals": [0, 25, 50, 75, 100],
+            # "ticktext": ["100", "75", "50", "25", "0"],
             "title": "Time Elapsed (hours)",
             "ylabel": column,
+            "automargin": True,
         },
         yaxis={
             "range": [
                 0,# df[column].min() - 0.1*(df[column].max() - df[column].min()), #min(200, min(df[column])),
                 6.5# df[column].max() + 0.1*(df[column].max() - df[column].min()), #max(700, max(df[column])),
             ],
+            "tickvals": [1,2,3,4,5,6],
             "showgrid": False,
             "showline": False,
             "fixedrange": True,
             "zeroline": False,
-            "gridcolor": app_color["graph_line"],
-            "nticks": 7 #max(50, round(df[column].iloc[-1] / 10)),
+            # "gridcolor": app_color["graph_line"],
+            "nticks": 7, #max(50, round(df[column].iloc[-1] / 10)),
+            "automargin": True,
         },
         shapes=[
             # Rectangulo de color verde para estilizar el scatter
             dict(
                 type='rect', 
-                x0=0, 
-                x1=100, 
+                x0=datemin1, 
+                x1=datemax1, 
                 y0=4, 
                 y1=6.5, 
-                fillcolor='lightgreen', 
+                fillcolor=colors['plantplot-bg-green'], 
                 layer='below',
                 linewidth=0,
             ),
             # Rectangulo de color rojo para estilizar el scatter
             dict(
                 type='rect', 
-                x0=0, 
-                x1=100, 
+                x0=datemin1, 
+                x1=datemax1, 
                 y0=0, 
                 y1=4, 
-                fillcolor='LightSalmon', 
+                fillcolor=colors['plantplot-bg-red'], 
                 layer='below',
                 linewidth=0,
             ),
             # Linea de color rojo para estilizar el scatter
             dict(
                 type="line",
-                x0=0,
+                x0=datemin1,
                 y0=4,
-                x1=100,
+                x1=datemax1,
                 y1=4,
                 line=dict(
-                    color="Salmon",
+                    color=colors['plantplot-l-red'],
                     width=4,
             
                 ),
@@ -331,7 +397,7 @@ page_2_layout = html.Div([
                                 html.Br(),
                                 html.H5("Información de la barra", className='text-center'),
                                 html.Br(),
-                                html.P("ID: ********", className='card-text text-center', id='card_info_id_s1'),
+                                html.P("ID: ********", className='card-text', id='card_info_id_s1'),
                                 html.Br()
                             ], className='col-10'),
                             html.Div(className='col-1'),
@@ -376,8 +442,8 @@ page_2_layout = html.Div([
                             id="signal-s1",
                             figure=dict(
                                 layout=dict(
-                                    plot_bgcolor=app_color["graph_bg"],
-                                    paper_bgcolor=app_color["graph_bg"],
+                                    # plot_bgcolor=app_color["graph_bg"],
+                                    # paper_bgcolor=app_color["graph_bg"],
                                 )
                             ),
                         ),
@@ -401,8 +467,8 @@ page_2_layout = html.Div([
                         figure=dict(
                             layout=dict(
                                 barmode='overlay',
-                                plot_bgcolor=app_color["graph_bg"],
-                                paper_bgcolor=app_color["graph_bg"],
+                                # plot_bgcolor=app_color["graph_bg"],
+                                # paper_bgcolor=app_color["graph_bg"],
                             )
                         ),
                     ),
@@ -440,7 +506,7 @@ page_2_layout = html.Div([
                                 html.Br(),
                                 html.H5("Información de la barra", className='text-center'),
                                 html.Br(),
-                                html.P("ID: ********", className='card-text text-center', id='card_info_id_s2'),
+                                html.P("ID: ********", className='card-text', id='card_info_id_s2'),
                                 html.Br()
                             ], className='col-10'),
                             html.Div(className='col-1'),
@@ -487,8 +553,8 @@ page_2_layout = html.Div([
                         id="signal-s2",
                         figure=dict(
                             layout=dict(
-                                plot_bgcolor=app_color["graph_bg"],
-                                paper_bgcolor=app_color["graph_bg"],
+                                # plot_bgcolor=app_color["graph_bg"],
+                                # paper_bgcolor=app_color["graph_bg"],
                             )
                         ),
                     ),
@@ -510,8 +576,8 @@ page_2_layout = html.Div([
                         figure=dict(
                             layout=dict(
                                 barmode='overlay',
-                                plot_bgcolor=app_color["graph_bg"],
-                                paper_bgcolor=app_color["graph_bg"],
+                                # plot_bgcolor=app_color["graph_bg"],
+                                # paper_bgcolor=app_color["graph_bg"],
                             )
                         ),
                     ),
@@ -523,16 +589,31 @@ page_2_layout = html.Div([
     dcc.Link('Go back to home', href='/')
 ])
 
-# Callback que actualiza la targeta de información de ID
-@app.callback([Output('card_info_id_s1', 'children'), Output('card_info_id_s2', 'children')],
-              [Input('store-id-clicked', 'modified_timestamp')],
+# Callback que actualiza la targeta de información de ID S1
+@app.callback(Output('card_info_id_s1', 'children'),
+              [Input('store-id-clicked', 'modified_timestamp'), Input("signal-dropdown-s1", "value")],
               [State('store-id-clicked', 'data')])
-def modify_lists_des_s1(timestamp, id_data):
-    return_data = "ID: ********"
+def modify_info_card_s1(timestamp, column, id_data):  
+    return_data = dcc.Markdown('''**ID**: -  
+                                **Date**: -   
+                                **-**: -  ''')  
     if id_data is not None:
         if 'id' in id_data.keys():
-            return_data = "ID: {}".format(id_data['id'])
-        return return_data, return_data
+            return_data = get_card_info_layout(id_data['id'], column)
+    return return_data
+
+# Callback que actualiza la targeta de información de ID S2
+@app.callback(Output('card_info_id_s2', 'children'),
+              [Input('store-id-clicked', 'modified_timestamp'), Input("signal-dropdown-s2", "value")],
+              [State('store-id-clicked', 'data')])
+def modify_info_card_s2(timestamp, column, id_data):
+    return_data = dcc.Markdown('''**ID**: -  
+                                **Date**: -   
+                                **-**: -  ''')  
+    if id_data is not None:
+        if 'id' in id_data.keys():
+            return_data = get_card_info_layout(id_data['id'], column)
+    return return_data
     
 # Callback que actualiza la lista de desviaciones de S1
 @app.callback(Output('list-des-s1', 'children'),
@@ -607,21 +688,21 @@ def gen_signal_s1(column, id_data):
     if id_data is not None:
         if 'id' in id_data.keys():
             # Query que devuelve a partir de una id las 1000 muestras anteriores
-            df = pd.read_sql(('SELECT * FROM signals WHERE id>{} AND id<={}'.format(id_data['id']-1000, id_data['id'])), server_conn)
+            df = pd.read_sql(('SELECT * FROM signals WHERE id>{} AND id<={}'.format(id_data['id']-500, id_data['id']+500)), server_conn)
     
-    # Scatter plot S1
+    # Signal Plot S1
     trace = dict(
         type="scatter",
-        y=df_raw[column],
+        y=df[column],
         line={"color": "#42C4F7"},
         mode="lines",
     )
     
-    # Scatter Layout S1
+    # Signal Layout S1
     layout = dict(
-        plot_bgcolor=app_color["graph_bg"],
-        paper_bgcolor=app_color["graph_bg"],
-        font={"color": colors['text']},
+        # plot_bgcolor=app_color["graph_bg"],
+        # paper_bgcolor=app_color["graph_bg"],
+        font={"color": colors['text'], "size": size_font, "family": family_font,},
         height=700,
         xaxis={
             "showline": True,
@@ -632,15 +713,15 @@ def gen_signal_s1(column, id_data):
         },
         yaxis={
             "range": [
-                df_raw[column].min() - 0.1*(df_raw[column].max() - df_raw[column].min()), 
-                df_raw[column].max() + 0.1*(df_raw[column].max() - df_raw[column].min()),
+                df[column].min() - 0.1*(df[column].max() - df[column].min()), 
+                df[column].max() + 0.1*(df[column].max() - df[column].min()),
             ],
             "showgrid": True,
             "showline": True,
             # "fixedrange": True,
             "zeroline": False,
-            "gridcolor": app_color["graph_line"],
-            "nticks": 20
+            # "gridcolor": app_color["graph_line"],
+            "nticks": 10
         },
     )
     
@@ -649,10 +730,17 @@ def gen_signal_s1(column, id_data):
         type="histogram",
         name='Historical',
         x=df_raw[column],
-        xbins=10,
+        nbins=10,
         bingroup=1,
-        histnorm='probability',
+        histnorm='percent',
         label='historical',
+        marker={
+            'line':{
+                'width': 1,
+                'color': colors['histogram-hist-br'],
+            },
+            'color': colors['histogram-hist'],
+        },
     )
     
     # Datos seleccionados con la id para el histograma S1
@@ -661,30 +749,54 @@ def gen_signal_s1(column, id_data):
         name='Actual',
         x=df[column],
         bingroup=1,
-        xbins=10,
-        histnorm='probability',
+        nbins=10,
+        histnorm='percent',
         opacity=0.75,
         label='current',
+        marker={
+            'line':{
+                'width': 1,
+                'color': colors['histogram-act-br'],
+            },
+            'color': colors['histogram-act'],
+        },
     )
     
     # Layout del histograma S1
     layout2=dict(
         barmode='overlay',
         height=700,
-        plot_bgcolor=app_color["graph_bg"],
-        paper_bgcolor=app_color["graph_bg"],
-        font={"color": colors['text']},
+        # plot_bgcolor=app_color["graph_bg"],
+        # paper_bgcolor=app_color["graph_bg"],
+        font={"color": colors['text'], "size": size_font, "family": family_font,},
+        shapes=[
+            {
+                'type':"line",
+                # 'xref':df[df['id']==id_data['id']][column].iloc[0],
+                'yref':'paper',
+                'x0':df[df['id']==id_data['id']][column].iloc[0],
+                'y0':0,
+                'x1':df[df['id']==id_data['id']][column].iloc[0], 
+                'y1':0.95,
+                'line':dict(
+                    color=colors['plantplot-l-red'],
+                    width=4,
+            
+                ),
+                # 'layer':'below'
+            }
+        ],
     )
 
     return [dict(data=[trace], layout=layout), dict(data=[trace2, trace3], layout=layout2)]
 
 # Callback que actualiza el plot y el histograma de la señal al cambiar de señal con el dropdown de S2
 @app.callback(
-    [Output("signal-s2", "figure"), Output("histogram-s2", "figure")], 
+    [Output("signal-s2", "figure"),  Output("histogram-s2", "figure")], 
     [Input("signal-dropdown-s2", "value")],
     [State('store-id-clicked', 'data')]
 )
-def gen_signal_s1(column, id_data):
+def gen_signal_s2(column, id_data):
     # Query por si no se ha seleccionado ningun punto devuelve los 1000 primeros puntos
     df = pd.read_sql('SELECT * FROM signals LIMIT 10000 OFFSET 0', server_conn)
     
@@ -692,21 +804,21 @@ def gen_signal_s1(column, id_data):
     if id_data is not None:
         if 'id' in id_data.keys():
             # Query que devuelve a partir de una id las 1000 muestras anteriores
-            df = pd.read_sql(('SELECT * FROM signals WHERE id>{} AND id<={}'.format(id_data['id']-1000, id_data['id'])), server_conn)
+            df = pd.read_sql(('SELECT * FROM signals WHERE id>{} AND id<={}'.format(id_data['id']-500, id_data['id']+500)), server_conn)
     
-    # Scatter plot S2
+    # Signal plot S2
     trace = dict(
         type="scatter",
-        y=df_raw[column],
+        y=df[column],
         line={"color": "#42C4F7"},
         mode="lines",
     )
 
-    # Scatter Layout S2
+    # Signal Layout S2
     layout = dict(
-        plot_bgcolor=app_color["graph_bg"],
-        paper_bgcolor=app_color["graph_bg"],
-        font={"color": colors['text']},
+        # plot_bgcolor=app_color["graph_bg"],
+        # paper_bgcolor=app_color["graph_bg"],
+        font={"color": colors['text'], "size": size_font, "family": family_font,},
         height=700,
         xaxis={
             "showline": True,
@@ -724,7 +836,7 @@ def gen_signal_s1(column, id_data):
             "showline": True,
             # "fixedrange": True,
             "zeroline": False,
-            "gridcolor": app_color["graph_line"],
+            # "gridcolor": app_color["graph_line"],
             "nticks": 20
         },
     )
@@ -734,10 +846,17 @@ def gen_signal_s1(column, id_data):
         type="histogram",
         name='Historical',
         x=df_raw[column],
-        xbins=10,
+        nbins=10,
         bingroup=1,
-        histnorm='probability',
+        histnorm='percent',
         label='historical',
+        marker={
+            'line':{
+                'width': 1,
+                'color': colors['histogram-hist-br'],
+            },
+            'color': colors['histogram-hist'],
+        },
     )
     
     # Datos seleccionados con la id para el histograma S2
@@ -746,19 +865,43 @@ def gen_signal_s1(column, id_data):
         name='Actual',
         x=df[column],
         bingroup=1,
-        xbins=10,
-        histnorm='probability',
+        nbins=10,
+        histnorm='percent',
         opacity=0.75,
         label='current',
+        marker={
+            'line':{
+                'width': 1,
+                'color': colors['histogram-act-br'],
+            },
+            'color': colors['histogram-act'],
+        },
     )
     
-    # Layout del histograma S1
+    # Layout del histograma S2
     layout2=dict(
         barmode='overlay',
         height=700,
-        plot_bgcolor=app_color["graph_bg"],
-        paper_bgcolor=app_color["graph_bg"],
-        font={"color": colors['text']},
+        # plot_bgcolor=app_color["graph_bg"],
+        # paper_bgcolor=app_color["graph_bg"],
+        font={"color": colors['text'], "size": size_font, "family": family_font,},
+        shapes=[
+            {
+                'type':"line",
+                # 'xref':df[df['id']==id_data['id']][column].iloc[0],
+                'yref':'paper',
+                'x0':df[df['id']==id_data['id']][column].iloc[0],
+                'y0':0,
+                'x1':df[df['id']==id_data['id']][column].iloc[0], 
+                'y1':0.95,
+                'line':dict(
+                    color=colors['plantplot-l-red'],
+                    width=4,
+            
+                ),
+                # 'layer':'below'
+            }
+        ],
     )
 
     return [dict(data=[trace], layout=layout), dict(data=[trace2, trace3], layout=layout2)]
