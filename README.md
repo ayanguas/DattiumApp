@@ -22,4 +22,4 @@ Aplicación de visualización en la nube de Dattium
 9. Accedemos al browser a: http://127.0.0.1:8050/
 
 
-Una vez hechos los pasos 1-7, cada vez que se quiera abrir la aplicación simplemente repitiendo los pasos 8 y 9 será suficiente.
+Una vez realizado los pasos 1-7, cada vez que se quiera abrir la aplicación simplemente repitiendo los pasos 8 y 9 será suficiente.
