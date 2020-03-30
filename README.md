@@ -8,9 +8,11 @@ Aplicación de visualización en la nube de Dattium
 ## Instrucciones
 
 1. Descomprimir el archivo *MiningProcess_Flotation_Plant_Database.csv.zip*
-2. Instalar y configurar [*PostgreSQL*](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads) version 12, mirar apartado I para la configuración.
-    1. x
-3. Abrir PgAdmin
+2. Instalar [*PostgreSQL*](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads) version 12.
+3. Abrir PgAdmin, programa para la gestión de los servidores y BBDD *PostgreSQL.
+4. Crear la BBDD en el servidor PostgreSQL 12
+    4.1. Click derecho sobre PostgreSQL 12 y seleccionamos crear una nueva BBDD con el nombre **DattiumApp**
+    4.2. Click derecho sobre la PostgreSQL 12 y seleccionamos crear un nuevo Login/Role Group con nombre de usuario **test** y password **test123** (se cambia en la pestaña *Definition*), finalmente le damos todos los permisos, en la pestaña *privileges*, habilitaremos las opciones *Can login?* y *Superuser*
 
 ## I. Creación de la BBDD PostgreSQL
 
