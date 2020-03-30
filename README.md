@@ -12,7 +12,7 @@ Aplicación de visualización en la nube de Dattium
 3. Configuración de *PostgreSQL* [[1]](https://blog.bigbinary.com/2016/01/23/configure-postgresql-to-allow-remote-connection.html)
     1. Abrimos con un editor de texto el archivo *PostgreSQL/12/data/postgresql.conf* y modificar la linea *listen_addres = 'localhost'* por **listen_addres = '*'**
     2. Abrimos con un editor de texto el archivo *PostgreSQL/12/data/pg_hba.conf* y se añade la siguiente linea *host all all 0.0.0.0/0 md5* justo despues de la linea *host all all 127.0.0.1/32 md5*
-4. Abrir PgAdmin, programa para la gestión de los servidores y BBDD *PostgreSQL.
+4. Abrir PgAdmin, programa para la gestión de los servidores y BBDD *PostgreSQL*.
 5. Crear la BBDD en el servidor PostgreSQL 12
     1. Click derecho sobre PostgreSQL 12 y seleccionamos crear una nueva BBDD con el nombre **DattiumApp**
     2. Click derecho sobre la PostgreSQL 12 y seleccionamos crear un nuevo Login/Role Group con nombre de usuario **test** y password **test123** (se cambia en la pestaña *Definition*), finalmente, le habilitamos todos los permisos, en la pestaña *privileges*, habilitaremos las opciones *Can login?* y *Superuser*
