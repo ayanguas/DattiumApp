@@ -5,7 +5,7 @@ Para esta aplicación vamos a utilizar el dataset *[Quality Prediction in a Mini
 
 ## Dependencias
 1. [*PostgreSQL*](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
-
+2. Dataset *Quality Prediction in a Mining Process* se encuentra en un .zip en la carpeta *data*
 
 ## Creación de la BBDD PostgreSQL
 
