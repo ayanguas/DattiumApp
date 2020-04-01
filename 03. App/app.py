@@ -470,13 +470,29 @@ page_1_layout = html.Div([
                         # html.Br(),
                         html.Div([
                             html.H5('Fecha de inicio'),
-                            dcc.DatePickerSingle(date=date(2017, 3, 1), display_format='DD-MM-YYYY', id='date-min'),
+                            html.Div([
+                                dcc.DatePickerSingle(date=date(2017, 3, 1), display_format='DD-MM-YYYY', \
+                                                     className='col-4', id='date-min'),
+                                dcc.Input(type='number', min=0, max=23, value=0, className='col-2', id='hour-min'),
+                                html.Div([
+                                    html.P(':'),
+                                ], className='col-1', style={'fontSize': 22}),
+                                dcc.Input(type='number', min=0, max=59, value=0, className='col-2', id='min-min'),
+                            ], className='row'),
                         ], className='col-3'),
                         # html.Br(),
                         html.Div(className='col-1'),
                         html.Div([
                             html.H5('Fecha final'),
-                            dcc.DatePickerSingle(date=date(2017, 3, 20), display_format='DD-MM-YYYY', id='date-max'),
+                            html.Div([
+                                dcc.DatePickerSingle(date=date(2017, 3, 20), display_format='DD-MM-YYYY', \
+                                                     className='col-4', id='date-max'),
+                                dcc.Input(type='number', min=0, max=23, value=0, className='col-2', id='hour-max'),
+                                html.Div([
+                                    html.P(':'),
+                                ], className='col-1', style={'fontSize': 22}),
+                                dcc.Input(type='number', min=0, max=59, value=0, className='col-2', id='min-max'),
+                            ], className='row'),
                         ], className='col-3'),
                     ], className="row"),
                     # Gráfico y filtros
@@ -543,27 +559,20 @@ def gen_signal_real(interval):
 # Callback que actualiza el gráfica cada X segundos o rango de fechas
 @app.callback(
     [Output("plant-plot-hist", "figure")], 
-    [Input("date-min", "date"), Input("date-max", "date")]
+    [Input("date-min", "date"), Input("date-max", "date"), Input('hour-min', 'value'),\
+     Input('hour-max', 'value'), Input('min-min', 'value'), Input('min-max', 'value')]
 )
-def gen_signal_hist(datemin, datemax):
+def gen_signal_hist(datemin, datemax, hourmin, hourmax, minmin, minmax):
     """
     Generate the signal graph.
     :params datemin: update the graph based on a date interval
     :params datemax: update the graph based on a date interval
-    """ 
-    if datemin == '':
-        datemin = None
-    if datemax == '':
-        datemax = None
-    
-    if (datemin is not None) and (datemax is not None):
-        datemin = "'" + datemin + " 00:00'"
-        datemax = "'" + datemax + " 00:00'"
-        # Consulta a postgreSQL que devuelve
-        df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)                 
-    else:
-        # Consulta a postgreSQL que devuelve las 100 primeras filas con un offset que incrementa cada GRAPH_INTERVALS ms
-        df = pd.read_sql(('SELECT * FROM signals LIMIT 100'), server_conn)  
+    """  
+    datemin = "'" + datemin + " " + str(hourmin).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
+    datemax = "'" + datemax + " " + str(hourmax).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
+    # Consulta a postgreSQL que devuelve
+    df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)                 
+
     trace, layout = get_plant_plot(df)
 
     return [dict(data=[trace], layout=layout)]
