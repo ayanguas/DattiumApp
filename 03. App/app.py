@@ -17,75 +17,23 @@ from dash.dependencies import Input, Output, State
 import dash_auth
 from sqlalchemy import create_engine
 from numpy.random import randint
+from datetime import timedelta, date
+
+##############################################################################
+#                            01. CONFIGURACIÓN                               #
+##############################################################################
 
 # Configurar ip para acceder a los datos de postgreSQL
 postgre_ip = '127.0.0.1'
 
+dark = True
+    
 # Script con las configuraciones CSS de Bootstrap
-external_stylesheets =  [dbc.themes.BOOTSTRAP] #['https://codepen.io/chriddyp/pen/bWLwgP.css'] #["https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"]
-
-colors = {
-    'background': '#EFEFEF',
-    'text': '#111144',
-    'plantplot-bg-green': '#F7FAF0', # Plantplot Background Green
-    'plantplot-bg-red': '#F9E9E0', # Plantplot Background Red
-    'plantplot-l-red': '#E46B6B', # Plantplot Line Red
-    'plantplot-mk-green': '#76B7B2', # Plantplot Marker Green
-    'plantplot-mk-red': '#E15759', # Plantplot Merker Red
-    'histogram-act': '#FFA64D', # Histogram Actual
-    'histogram-act-br': '#FF8C1A', # Histogram Actual Border
-    'histogram-hist': '#4DA6FF', # Histogram Historical
-    'histogram-hist-br': '#1A8CFF', # Histogram Historical Border
-}
-
-family_font = 'Arial, sans-serif' # Graph Text Font
-size_font = 18 # Graph Text Size
-
-app_color = {"graph_bg": "#HFHFHF", "graph_line": "#007ACE"}
-
-# Funcion que nos devuelve (aleatoriamente) las columnas que se desvian o tienen algun fallo
-def get_columns(df, seccion):
-    if seccion == 's1':
-        columns = columns_s1
-    elif seccion == 's2':
-        columns = columns_s2
-    else:
-        columns= columns
-    columns_fallo=columns[randint(len(columns), size=(randint(5)), dtype='int')]
-    columns_desviacion=columns[randint(len(columns), size=(randint(5)), dtype='int')]
-    return [columns_fallo, columns_desviacion]
-
-# A partir de las columnas seleccionadas nos devuelve el layout para mostrar en la app
-def get_cards_layout(columns, desviaciones):
-    children = []
-    if len(columns)>0:
-        i = 1
-        for column in columns:
-            children.append(dbc.ListGroupItem(column, className='text-center', id='list-item-{}'.format(i)))
-            i+=1
-        return children
-    else:
-        if desviaciones:
-            return dbc.ListGroupItem("No hay ningúna señal desviada", className='text-center',\
-                                     color='success', id='list-item-1')
-        else:
-            return dbc.ListGroupItem("No hay ningúna señal con fallos de registro/sensor",\
-                                     className='text-center', color='success', id='list-item-1')
-
-# Función que devuelve el texto que ira dentro del recuadro de información de la barra seleccionada page-2
-def get_card_info_layout(id_data, column):
-    df = pd.read_sql('SELECT * FROM signals WHERE id={}'.format(id_data), server_conn)
-    if len(df)==1:
-        text = dcc.Markdown('''**ID**: {}  
-                            **Date**: {}   
-                            **{}**: {:.2f}  '''.format(df['id'].iloc[0], df['date'].iloc[0],\
-                                                                                 column, df[column].iloc[0]))
-    else:
-        text = dcc.Markdown('''**ID**: -  
-                            **Date**: -   
-                            **-**: -  ''')              
-    return text
-
+if dark:
+    external_stylesheets =  [dbc.themes.DARKLY] #SLATE / DARKLY /SUPERHERO / BOOTSTRAP
+else:
+    external_stylesheets =  [dbc.themes.BOOTSTRAP] #SLATE / DARKLY /SUPERHERO / BOOTSTRAP
+    
 # Conexion a la BBDD postgreSQL con el usuario test, contraseña test123 y en la BBDD DattiumApp        
 server_conn = create_engine('postgresql://test:test123@{}:5432/DattiumApp'.format(postgre_ip))
 # Extraemos en un DF todos los datos de la BBDD
@@ -109,138 +57,107 @@ app.config.suppress_callback_exceptions = True
 auth = dash_auth.BasicAuth(app,USERNAME_PASSWORD_PAIRS)
 server = app.server
 
-# Layout de la app
-app.layout = html.Div([
-    # Store, sirve para guardar datos y poder acceder a ellos entre paginas
-    dcc.Store(id='store-p2-layout'),
-    dcc.Store(id='store-id-clicked'),
-    # Sirve para poder crear distintas paginas www.dattiumapp.com/page-1 o www.dattiumapp.com/page-2
-    dcc.Location(id='url', refresh=False),
-    # Contenido de las paginas
-    html.Div(id='page-content')
-])
+if dark:
+    graph_bg = '#303030'#272B30'
+    text_color = '#AAAA9F'
+    pp_bg_green = '#356437'
+    pp_bg_red = '#653434'
+    pp_mk_green = '#59C159'
+    pp_mk_red = '#EC5550'
+else:
+    graph_bg = ''
+    text_color = ''
+    pp_bg_green = '#F7FAF0'
+    pp_bg_red = '#F9E9E0'
+    pp_mk_green = '#76B7B2'
+    pp_mk_red = '#E15759'
 
-# Barra de navegacion de la aplicacion
-navbar = dbc.Navbar([
-        html.A(
-            # Imagen con el logo de Dattium que nos llevara a la página principal de la App
-            # Use row and col to control vertical alignment of logo / brand
-            html.Img(src=app.get_asset_url("logo-dattium-navbar.png"),\
-                                     height="30px"),
-            href="/",
-            className='float-right'
-        ),
-    ])
+colors = {
+    'navbar': 'secondary',
+    'graph-bg': graph_bg,
+    'text': text_color,
+    'text-dropdown': '#3A3A3A',
+    'plantplot-bg-green': pp_bg_green, # Plantplot Background Green
+    'plantplot-bg-red': pp_bg_red, # Plantplot Background Red
+    'plantplot-l-red': '#E46B6B', # Plantplot Line Red
+    'plantplot-mk-green': pp_mk_green, # Plantplot Marker Green
+    'plantplot-mk-red': pp_mk_red, # Plantplot Merker Red
+    'histogram-act': '#FFA64D', # Histogram Actual
+    'histogram-act-br': '#FF8C1A', # Histogram Actual Border
+    'histogram-hist': '#4DA6FF', # Histogram Historical
+    'histogram-hist-br': '#1A8CFF', # Histogram Historical Border
+    'grid': '#636363', 
+    'signal-line': '#FEC036'# Linea del gráfico de la señal
+}
 
-# Pagina 1, imagen de la planta y un gráfico general con el comportamiento de esta
-page_1_layout = html.Div([
-    # Barra de navegación de la aplicación
-    navbar,
-    
-    # Content
-    html.Div([
-        # PLot of general view of plant
-        html.Div([
-            # Titulo del gráfico
-            html.H1(
-                id='header-plant-plot',
-                children='Plant stability',
-                style={
-                    'textAlign': 'center',
-                    'color': colors['text'],
-                    'margin-top': '30px'
-                    },
-            ),
-            html.Br(),
-            # Gráfico y filtros
-            html.Div([
-                html.Div(className='col-1'),
-                # Gráfico general del comportamiento de la planta
-                dcc.Graph(
-                    id="plant-plot",
-                    figure=dict(
-                        layout=dict(
-                            # plot_bgcolor=app_color["graph_bg"],
-                            # paper_bgcolor=app_color["graph_bg"],
-                        )
-                    ),
-                    className = 'mh-100 col-8',
-                ),
-                # Filters
-                html.Div([
-                    html.H4('Filtros'),
-                    html.Br(),
-                    # Boton de pausa para pausar el gráfico
-                    dbc.Button("Pause", id="example-button"),
-                    html.Br(),
-                    html.Br(),
-                    html.H5('Fecha de inicio'),
-                    dbc.Input(type='datetime-local', id='date-min'),
-                    html.Br(),
-                    html.H5('Fecha final'),
-                    dbc.Input(type='datetime-local', id='date-max'),
-                ], className="col-2"),
-            ], className='row mh-100'),
-            # Interval, sirve para ir actualizando el gráfico cada GRAPH_INTERVAL ms
-            dcc.Interval(
-                id="signal-update",
-                interval=int(GRAPH_INTERVAL),
-                n_intervals=0,
-            ), 
-        ]), 
-        html.Br(),
-        # Imagen de la planta
-        html.Div([
-            html.Img(src=app.get_asset_url("plant-diagram.png"), className='mx-auto d-block')
-        ], className = 'row'), 
-    ], className = ''),   
-])
+# Parametros de configuración del texto de los gráficos
+family_font = 'Arial, sans-serif' # Graph Text Font
+size_font = 22 # Graph Text Size
+size_font_cards = 18 # Graph Text Size
+pp_size = '500px' # Plant plot graph size
 
-# Callback que pausa la actualización automática del gráfico
-@app.callback(
-    [Output("signal-update", "disabled"), Output("example-button", "children")], 
-    [Input("example-button", "n_clicks")],
-    [State("signal-update", "disabled")]
-)
-def enable_update(n, disabled):
-    children = "Play"
-    if n is not None:
-        if disabled:
-            children="Pause"
-        return (not disabled), children
+##############################################################################
+#                             02. FUNCIONES                                  #
+##############################################################################
 
-# Callback que actualiza el gráfica cada X segundos o rango de fechas
-@app.callback(
-    [Output("plant-plot", "figure")], 
-    [Input("signal-update", "n_intervals"), Input("date-min", "value"), Input("date-max", "value")]
-)
-def gen_signal(interval, datemin, datemax):
-    """
-    Generate the signal graph.
-    :params interval: update the graph based on an interval
-    :params datemin: update the graph based on a date interval
-    :params datemax: update the graph based on a date interval
-    """
-    # Columna del df que se va a visualizar en el gráfico
-    column = 'label'
-    
-    if datemin == '':
-        datemin = None
-    if datemax == '':
-        datemax = None
-    
-    if (datemin is None) and (datemax is None):
-        # Consulta a postgreSQL que devuelve las 100 primeras filas con un offset que incrementa cada GRAPH_INTERVALS ms
-        df = pd.read_sql(('SELECT * FROM signals LIMIT 100 OFFSET %s' % (interval)), server_conn)         
+# Funcion que nos devuelve (aleatoriamente) las columnas que se desvian o tienen algun fallo
+def get_columns(df, seccion):
+    if seccion == 's1':
+        columns = columns_s1
+    elif seccion == 's2':
+        columns = columns_s2
     else:
-        datemin = "'" + datemin.replace('T', ' ') + ":00'"
-        datemax = "'" + datemax.replace('T', ' ') + ":00'"
-        # Consulta a postgreSQL que devuelve
-        df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)  
+        columns= columns
+    columns_fallo=columns[randint(len(columns), size=(randint(5)), dtype='int')]
+    columns_desviacion=columns[randint(len(columns), size=(randint(5)), dtype='int')]
+    return [columns_fallo, columns_desviacion]
+
+# A partir de las columnas seleccionadas nos devuelve el layout para mostrar en la app
+def get_cards_layout(columns, desviaciones):
+    children = []
+    if len(columns)>0:
+        i = 1
+        for column in columns:
+            children.append(dbc.ListGroupItem(column, className='text-center', \
+                                              style={"color": colors['text'], "font-size": size_font_cards, \
+                                                     "font-family": family_font,}, \
+                                                  id='list-item-{}'.format(i)))
+            i+=1
+        return children
+    else:
+        if desviaciones:
+            return dbc.ListGroupItem("No hay ningúna señal desviada", className='text-center',\
+                                     color='success', style={"font-size": size_font_cards,\
+                                                             "font-family": family_font,},\
+                                         id='list-item-1')
+        else:
+            return dbc.ListGroupItem("No hay ningúna señal con fallos de registro/sensor",\
+                                     className='text-center', style={"font-size": size_font_cards,\
+                                                                     "font-family": family_font,}, color='success',\
+                                         id='list-item-1')
+
+# Función que devuelve el texto que ira dentro del recuadro de información de la barra seleccionada page-2
+def get_card_info_layout(id_data, column):
+    df = pd.read_sql('SELECT * FROM signals WHERE id={}'.format(id_data), server_conn)
+    if len(df)==1:
+        text = dcc.Markdown('''**ID**: {}  
+                            **Date**: {}   
+                            **{}**: {:.2f}  '''.format(df['id'].iloc[0], df['date'].iloc[0],\
+                            column, df[column].iloc[0]), style={"color": colors['text'], \
+                                                                          "font-size": size_font_cards, "font-family": family_font,})
+    else:
+        text = dcc.Markdown('''**ID**: -  
+                            **Date**: -   
+                            **-**: -  ''', style={"color": colors['text'], "font-size": size_font_cards, "font-family": family_font,})              
+    return text
+
+# Función que devuelve el trace y layout de plant-plot
+def get_plant_plot(df):
     
-    datemin1 = df['date'].min()
-    datemax1 = df['date'].max()
-    # total_time = get_current_time()
+    column = 'label'
+    datemin1 = df['date'].min() - timedelta(hours=2)
+    datemax1 = df['date'].max() + timedelta(hours=2)
+    
     # Scatter plot con del label de comportamiento de la planta
     trace = dict(
         type="scatter",
@@ -269,8 +186,8 @@ def gen_signal(interval, datemin, datemax):
         
     # Opciones de estilo del gráfico
     layout = dict(
-        # plot_bgcolor=app_color["graph_bg"],
-        # paper_bgcolor=app_color["graph_bg"],
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font, "family": family_font,},
         height=500,
         xaxis={
@@ -294,7 +211,7 @@ def gen_signal(interval, datemin, datemax):
             "showline": False,
             "fixedrange": True,
             "zeroline": False,
-            # "gridcolor": app_color["graph_line"],
+            "gridcolor": colors["grid"],
             "nticks": 7, #max(50, round(df[column].iloc[-1] / 10)),
             "automargin": True,
         },
@@ -337,15 +254,329 @@ def gen_signal(interval, datemin, datemax):
             )
         ],
     )
+    return trace, layout
+
+# Función que devuelve el trace y layout del gráfico de la señal
+def get_signal_plot(df, column):
+    # Signal Plot S1
+    trace = dict(
+        type="scatter",
+        y=df[column],
+        x=df['date'],
+        line={"color": colors['signal-line']},
+        mode="lines",
+    )
+    
+    # Signal Layout S1
+    layout = dict(
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        font={"color": colors['text'], "size": size_font, "family": family_font,},
+        height=700,
+        xaxis={
+            "showline": True,
+            "zeroline": False,
+            "fixedrange": False,
+            "title": "Fecha",
+            "ylabel": column,
+        },
+        yaxis={
+            "range": [
+                df[column].min() - 0.1*(df[column].max() - df[column].min()), 
+                df[column].max() + 0.1*(df[column].max() - df[column].min()),
+            ],
+            "showgrid": True,
+            "showline": True,
+            # "fixedrange": True,
+            "zeroline": False,
+            "gridcolor": colors["grid"],
+            "nticks": 10
+        },
+    )
+    return trace, layout
+
+# Función que devuelve los traces y layout del histograma
+def get_histogram(df, column, id_data):
+    # Datos historicos del histograma S1
+    trace = dict(
+        type="histogram",
+        name='Historical',
+        x=df_raw[column],
+        nbins=10,
+        bingroup=1,
+        histnorm='percent',
+        label='historical',
+        marker={
+            'line':{
+                'width': 1,
+                'color': colors['histogram-hist-br'],
+            },
+            'color': colors['histogram-hist'],
+        },
+    )
+    
+    # Datos seleccionados con la id para el histograma S1
+    trace2 = dict(
+        type="histogram",
+        name='Actual',
+        x=df[column],
+        bingroup=1,
+        nbins=10,
+        histnorm='percent',
+        opacity=0.75,
+        label='current',
+        marker={
+            'line':{
+                'width': 1,
+                'color': colors['histogram-act-br'],
+            },
+            'color': colors['histogram-act'],
+        },
+    )
+    
+    # Layout del histograma S1
+    layout=dict(
+        barmode='overlay',
+        height=700,
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        font={"color": colors['text'], "size": size_font, "family": family_font,},
+        shapes=[
+            {
+                'type':"line",
+                # 'xref':df[df['id']==id_data['id']][column].iloc[0],
+                'yref':'paper',
+                'x0':df[df['id']==id_data][column].iloc[0],
+                'y0':0,
+                'x1':df[df['id']==id_data][column].iloc[0], 
+                'y1':0.95,
+                'line':dict(
+                    color=colors['plantplot-l-red'],
+                    width=4,
+            
+                ),
+                # 'layer':'below'
+            }
+        ],
+    )
+    return trace, trace2, layout
+##############################################################################
+#                              03. LAYOUT                                    #
+##############################################################################
+
+# Layout de la app
+app.layout = html.Div([
+    # Store, sirve para guardar datos y poder acceder a ellos entre paginas
+    dcc.Store(id='store-p2-layout'),
+    dcc.Store(id='store-id-clicked'),
+    # Sirve para poder crear distintas paginas www.dattiumapp.com/page-1 o www.dattiumapp.com/page-2
+    dcc.Location(id='url', refresh=False),
+    # Contenido de las paginas
+    html.Div(id='page-content')
+])
+
+# Barra de navegacion de la aplicacion
+navbar = dbc.Navbar([
+        html.A(
+            # Imagen con el logo de Dattium que nos llevara a la página principal de la App
+            # Use row and col to control vertical alignment of logo / brand
+            html.Img(src=app.get_asset_url("logo-dattium-navbar.png"),\
+                                     height="45px"),
+            href="/",
+            className='float-right'
+        ),
+    ], className='lg', color=colors['navbar'])
+
+##############################################################################
+#                             04_1. PAGE-1                                   #
+##############################################################################
+    
+# Pagina 1, imagen de la planta y un gráfico general con el comportamiento de esta
+page_1_layout = html.Div([
+    # Barra de navegación de la aplicación
+    navbar,
+    dbc.Tabs([
+        dbc.Tab([
+            # Content
+            html.Div([
+                # PLot of general view of plant
+                html.Div([
+                    # Titulo del gráfico
+                    html.H1(
+                        id='header-plant-plot-real',
+                        children='Tiempo Real',
+                        style={
+                            'textAlign': 'center',
+                            'color': colors['text'],
+                            'margin-top': '30px'
+                            },
+                    ),
+                    html.Br(),
+                    html.Div([
+                        html.Div(className='col-10'),
+                        dbc.Button("Pause", className='ml-auto', id="pause-button"),
+                        html.Div(className='col-1'),
+                    ], className='row'),
+                    # Gráfico y filtros
+                    html.Div([
+                        html.Div(className='col-1', style=dict(height=pp_size)),
+                        # Gráfico general del comportamiento de la planta
+                        dcc.Graph(
+                            id="plant-plot-real",
+                            figure=dict(
+                                layout=dict(
+                                    plot_bgcolor=colors["graph-bg"],
+                                    paper_bgcolor=colors["graph-bg"],
+                                )
+                            ),
+                            className = 'col-10',
+                            style=dict(background=colors['graph-bg'])
+                        ),
+                    ], className='row'),
+                    # Interval, sirve para ir actualizando el gráfico cada GRAPH_INTERVAL ms
+                    dcc.Interval(
+                        id="signal-update",
+                        interval=int(GRAPH_INTERVAL),
+                        n_intervals=0,
+                    ), 
+                ]), 
+            ]),
+            html.Br(),
+            # Imagen de la planta
+            html.Div([
+                html.Img(src=app.get_asset_url("plant-diagram.png"), className='mx-auto d-block')
+            ], className = 'row'),
+        ], label='Tiempo Real'),
+        dbc.Tab([
+            # Content
+            html.Div([
+                # PLot of general view of plant
+                html.Div([
+                    # Titulo del gráfico
+                    html.H1(
+                        id='header-plant-plot-hist',
+                        children='Historico',
+                        style={
+                            'textAlign': 'center',
+                            'color': colors['text'],
+                            'margin-top': '30px'
+                            },
+                    ),
+                    html.Br(),
+                    # Filters
+                    html.Div([
+                        html.Div(className='col-1'),
+                        # html.H4('Filtros'),
+                        # html.Br(),
+                        html.Div([
+                            html.H5('Fecha de inicio'),
+                            dcc.DatePickerSingle(date=date(2017, 3, 1), display_format='DD-MM-YYYY', id='date-min'),
+                        ], className='col-3'),
+                        # html.Br(),
+                        html.Div(className='col-1'),
+                        html.Div([
+                            html.H5('Fecha final'),
+                            dcc.DatePickerSingle(date=date(2017, 3, 20), display_format='DD-MM-YYYY', id='date-max'),
+                        ], className='col-3'),
+                    ], className="row"),
+                    # Gráfico y filtros
+                    html.Div([
+                        html.Div(className='col-1', style=dict(height=pp_size)),
+                        # Gráfico general del comportamiento de la planta
+                        dcc.Graph(
+                            id="plant-plot-hist",
+                            figure=dict(
+                                layout=dict(
+                                    plot_bgcolor=colors["graph-bg"],
+                                    paper_bgcolor=colors["graph-bg"],
+                                ),
+                            ),
+                            className = 'col-10',
+                        ), 
+                    ], className='row'),
+                ]), 
+            ]),
+            html.Br(),
+            # Imagen de la planta
+            html.Div([
+                html.Img(src=app.get_asset_url("plant-diagram.png"), className='mx-auto d-block')
+            ], className = 'row'),
+        ], label='Historico'),
+    ], className = ''),   
+])
+
+##############################################################################
+#                          04_2. PAGE-1 CALLBACKS                            #
+##############################################################################
+
+# Callback que pausa la actualización automática del gráfico
+@app.callback(
+    [Output("signal-update", "disabled"), Output("pause-button", "children")], 
+    [Input("pause-button", "n_clicks")],
+    [State("signal-update", "disabled")]
+)
+def enable_update(n, disabled):
+    children = "Play"
+    if n is not None:
+        if disabled:
+            children="Pause"
+        return (not disabled), children
+
+# Callback que actualiza el gráfica cada X segundos o rango de fechas
+@app.callback(
+    [Output("plant-plot-real", "figure")], 
+    [Input("signal-update", "n_intervals")]
+)
+def gen_signal_real(interval):
+    """
+    Generate the signal graph.
+    :params interval: update the graph based on an interval
+    """ 
+
+    # Consulta a postgreSQL que devuelve las 100 primeras filas con un offset que incrementa cada GRAPH_INTERVALS ms
+    df = pd.read_sql(('SELECT * FROM signals LIMIT 100 OFFSET %s' % (interval)), server_conn)
+    
+    trace, layout = get_plant_plot(df)
+
+    return [dict(data=[trace], layout=layout)]
+
+# Callback que actualiza el gráfica cada X segundos o rango de fechas
+@app.callback(
+    [Output("plant-plot-hist", "figure")], 
+    [Input("date-min", "date"), Input("date-max", "date")]
+)
+def gen_signal_hist(datemin, datemax):
+    """
+    Generate the signal graph.
+    :params datemin: update the graph based on a date interval
+    :params datemax: update the graph based on a date interval
+    """ 
+    if datemin == '':
+        datemin = None
+    if datemax == '':
+        datemax = None
+    
+    if (datemin is not None) and (datemax is not None):
+        datemin = "'" + datemin + " 00:00'"
+        datemax = "'" + datemax + " 00:00'"
+        # Consulta a postgreSQL que devuelve
+        df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)                 
+    else:
+        # Consulta a postgreSQL que devuelve las 100 primeras filas con un offset que incrementa cada GRAPH_INTERVALS ms
+        df = pd.read_sql(('SELECT * FROM signals LIMIT 100'), server_conn)  
+    trace, layout = get_plant_plot(df)
 
     return [dict(data=[trace], layout=layout)]
 
 # Callback al clicar en un punto del gráfico, guarda en los Store el id del punto y el layout de las señales
 # que se van a mostrar como desviaciones/fallos
 @app.callback([Output('store-p2-layout', 'data'), Output('url', 'pathname'), Output('store-id-clicked', 'data')],
-              [Input('plant-plot', 'clickData')])
-def change_page(click_data):
+              [Input('plant-plot-real', 'clickData'), Input('plant-plot-hist', 'clickData')])
+def change_page(click_data, click_data_hist):
     des_s1 =  dbc.ListGroupItem("No hay ningúna señal desviada", id="desviacion-s1-item", className='text-center')
+    des_s2 =  dbc.ListGroupItem("No hay ningúna señal desviada", id="desviacion-s2-item", className='text-center')
+    fal_s1 =  dbc.ListGroupItem("No hay ningúna señal con fallos de registro/sensor", id="fallos-s1-item", className='text-center')
+    fal_s2 =  dbc.ListGroupItem("No hay ningúna señal con fallos de registro/sensor", id="fallos-s2-item", className='text-center')
     point_id = -1
     if click_data is not None:
         if 'points' in click_data.keys():
@@ -358,7 +589,23 @@ def change_page(click_data):
                 fal_s1 = get_cards_layout(col_fal_s1, False)
                 des_s2 = get_cards_layout(col_des_s2, True)
                 fal_s2 = get_cards_layout(col_fal_s2, False)
+    if (click_data is None) and (click_data_hist is not None):
+        if 'points' in click_data_hist.keys():
+            if 'id' in click_data_hist['points'][0].keys():
+                point_id = click_data_hist['points'][0]['id']
+                selected_data = pd.read_sql(('SELECT * FROM signals WHERE id=%s' % (point_id)), server_conn)
+                [col_fal_s1, col_des_s1] = get_columns(selected_data, 's1')
+                [col_fal_s2, col_des_s2] = get_columns(selected_data, 's2')
+                des_s1 = get_cards_layout(col_des_s1, True)
+                fal_s1 = get_cards_layout(col_fal_s1, False)
+                des_s2 = get_cards_layout(col_des_s2, True)
+                fal_s2 = get_cards_layout(col_fal_s2, False)
     return [{'des_s1': (des_s1), 'fal_s1': (fal_s1), 'des_s2': (des_s2), 'fal_s2': (fal_s2)}, '/page-1', {'id': point_id}]
+
+
+##############################################################################
+#                             05_1. PAGE-2                                   #
+##############################################################################
 
 # Página 2, dividida en dos tabs S1 y S2, en cada una de ellas tenemos la imagen de la seccion, la lista de 
 # señales desviadas, la lista de las señales con fallos en el sensor/registro, la señal sobre el tiempo,
@@ -371,197 +618,228 @@ page_2_layout = html.Div([
     dbc.Tabs([
         # Tab S1
         dbc.Tab(label='S1', children = [
-            # Imagen
-            html.Img(src=app.get_asset_url("plant-s1.png"), className='mx-auto d-block'),
-            # Titulo seccion
-            html.H1('Seccion 1', id='header-s1', className='text-center'),
-            # Listas de desviacion y fallos de registro/sensor S1
+            html.Br(),
             html.Div([
-                
-                 # Lista de desviacion S1
+                # Imagen
                 html.Div(className='col-1'),
-                dbc.Card([
-                    html.Br(),
-                    html.H2('Desviaciones', className='text-center'),
-                    html.Br(),
-                    dbc.ListGroup(id='list-des-s1'),
-                    html.Br()
-                ], className='col-4', color='warning', outline=True),
-                
-                # Carta informativa de la ID seleccionada S1
+                html.Img(src=app.get_asset_url("plant-s1.png"), className='mx-auto d-block col-3'),
+                # html.Div(className='col-1'),
                 html.Div([
-                    dbc.Card([
-                        dbc.Row([
-                            html.Div(className='col-1'),
-                            html.Div([
-                                html.Br(),
-                                html.H5("Información de la barra", className='text-center'),
-                                html.Br(),
-                                html.P("ID: ********", className='card-text', id='card_info_id_s1'),
-                                html.Br()
-                            ], className='col-10'),
-                            html.Div(className='col-1'),
-                        ]),
-                    ], outline=True)
-                ],className='col-2 rounded d-flex justify-content-center align-items-center'),
-                
-                # Lista de fallos de registro/sensor S1
-                dbc.Card([
-                    html.Br(),
-                    html.H2('Fallos de registro/sensor', className='text-center'),
-                    html.Br(),
-                    dbc.ListGroup(id='list-fal-s1'), 
-                    html.Br()
-                ], className='col-4', color='danger', outline=True),
-                html.Div(className='col-1'),
+                    # Titulo seccion
+                    html.H1('Seccion 1', id='header-s1', className='text-center'),
+                    # Listas de desviacion y fallos de registro/sensor S1
+                    html.Div([
+                         # Lista de desviacion S1
+                        html.Div(className='col-1'),
+                        dbc.Card([
+                            html.Br(),
+                            html.H3('Desviaciones', className='text-center'),
+                            html.Br(),
+                            dbc.ListGroup(id='list-des-s1'),
+                            html.Br()
+                        ], className='col-4', color='warning', outline=True),#col-4
+                        html.Br(),
+                        # Carta informativa de la ID seleccionada S1
+                        html.Div([
+                            dbc.Card([
+                                dbc.Row([
+                                    html.Div(className='col-1'),
+                                    html.Div([
+                                        html.Br(),
+                                        html.H5("Información de la barra", className='text-center'),
+                                        html.Br(),
+                                        html.P("ID: ********", className='card-text', id='card_info_id_s1'),
+                                        html.Br()
+                                    ], className='col-10'),
+                                    html.Div(className='col-1'),
+                                ]),
+                            ], outline=True)
+                        ],className='col-2 rounded d-flex justify-content-center align-items-center'),#col-2
+                        html.Br(), 
+                        # Lista de fallos de registro/sensor S1
+                        dbc.Card([
+                            html.Br(),
+                            html.H3('Fallos de registro/sensor', className='text-center'),
+                            html.Br(),
+                            dbc.ListGroup(id='list-fal-s1'), 
+                            html.Br()
+                        ], className='col-4', color='danger', outline=True),#col-4
+                        html.Div(className='col-1'),#col-1
+                    ], className='row'),#row
+                ], className='col-7'),
+                # html.Div(className='col-1'),
             ], className='row'),
             html.Br(),
-            # Plot señal + histograma S1 
-            dcc.Dropdown(
-                id="signal-dropdown-s1",
-                options=[{'label': x, 'value': x} for x in columns_s1],
-                value='Amina Flow',
-                style={
-                    'color': colors['text']
-                },
-            ),
             html.Div([
+                # Plot señal + histograma S1 
+                html.Div([
+                    html.H3('Selector de señal'),
+                    dcc.Dropdown(
+                        id="signal-dropdown-s1",
+                        options=[{'label': x, 'value': x} for x in columns_s1],
+                        value='Amina Flow',
+                        style={
+                            'color': colors['text-dropdown'],
+                            # 'background': colors['graph-bg']
+                        },
+                    ),
+                ], className='col-2'),
                 # Plot señal S1
                 html.Div([
-                        # Título del gráfico S1
+                        # Título del gráfico 
+                        html.Br(),
                         html.H3(
                             id='header-signal-plot-s1',
                             children='Signal plot',
                             style={
                                 'textAlign': 'center',
-                                'color': colors['text']
-                                }
+                                'color': colors['text'],
+                            }
                         ),
                         # Gráfico S1
                         dcc.Graph(
                             id="signal-s1",
                             figure=dict(
                                 layout=dict(
-                                    # plot_bgcolor=app_color["graph_bg"],
-                                    # paper_bgcolor=app_color["graph_bg"],
+                                    plot_bgcolor=colors["graph-bg"],
+                                    paper_bgcolor=colors["graph-bg"],
                                 )
                             ),
                         ),
                         
-                    ],className='signal-plot col-7'),
+                    ],className='signal-plot col-5', style={'background': colors['graph-bg']}),
                 
                 # Plot histograma S1
                 html.Div([
-                    # Título del histograma de S1
-                    html.H3(
-                        id='header-histogram-s1',
-                        children='Histogram',
-                        style={
-                            'textAlign': 'center',
-                            'color': colors['text']
-                        }
-                    ),
-                    # Histograma de S1
-                    dcc.Graph(
-                        id="histogram-s1",
-                        figure=dict(
-                            layout=dict(
-                                barmode='overlay',
-                                # plot_bgcolor=app_color["graph_bg"],
-                                # paper_bgcolor=app_color["graph_bg"],
-                            )
+                    html.Div(className='col-1'),
+                    html.Div([
+                        # Título del histograma de S1
+                        html.Br(),
+                        html.H3(
+                            id='header-histogram-s1',
+                            children='Histogram',
+                            style={
+                                'textAlign': 'center',
+                                'color': colors['text']
+                            }
                         ),
-                    ),
-                ],className='histogram-plot col-5'),
+                        # Histograma de S1
+                        dcc.Graph(
+                            id="histogram-s1",
+                            figure=dict(
+                                layout=dict(
+                                    barmode='overlay',
+                                    plot_bgcolor=colors["graph-bg"],
+                                    paper_bgcolor=colors["graph-bg"],
+                                )
+                            ),
+                        ),
+                    ], className='col-11', style={'background': colors['graph-bg']}),
+                ],className='histogram-plot row col-5'),
             ], id='graficos-s1', className='row'),
         ]),
         # Tab S2
         dbc.Tab(label='S2', children = [
-            # Imagen de la seccion
-            html.Img(src=app.get_asset_url("plant-s2.png"), className='mx-auto d-block'),
-            # Titulo de la seccion
-            html.H1('Seccion 2', id='header-s2', className='text-center'),
-            # Listas de desviacion y fallos de registro/sensor S1
+            html.Br(),
             html.Div([
-                
-                # Lista de desviacion S2
-                html.Div(className='col-1'),
-                dbc.Card([
-                    html.Br(),
-                    # Titulo de la lista
-                    html.H2('Desviaciones', className='text-center'),
-                    html.Br(),
-                    # Lista
-                    dbc.ListGroup(id='list-des-s2'),
-                    # dbc.ListGroup(id='list-desviaciones-s1'),  
-                    html.Br()
-                ], className='col-4', color='warning', outline=True), 
-                
-                # Carta informativa de la ID seleccionada S2
+                # Listas de desviacion y fallos de resgistros/sensores
                 html.Div([
-                    dbc.Card([
-                        dbc.Row([
-                            html.Div(className='col-1'),
-                            html.Div([
-                                html.Br(),
-                                html.H5("Información de la barra", className='text-center'),
-                                html.Br(),
-                                html.P("ID: ********", className='card-text', id='card_info_id_s2'),
-                                html.Br()
-                            ], className='col-10'),
-                            html.Div(className='col-1'),
-                        ]),
-                    ], outline=True)
-                ],className='col-2 rounded d-flex justify-content-center align-items-center'),
+                    # Titulo seccion
+                    html.H1('Seccion 1', id='header-s2', className='text-center'),
+                    html.Br(),
+                    # Listas de desviacion y fallos de registro/sensor S2
+                    html.Div([
+                         # Lista de desviacion S2
+                        html.Div(className='col-1'),
+                        html.Div([
+                            dbc.Card([
+                                dbc.CardHeader([
+                                    html.H3('Desviaciones', className='text-center'),
+                                ]),
+                                dbc.CardBody([
+                                    dbc.ListGroup(id='list-des-s2'), 
+                                ]),
+                            ], color='warning', outline=True),#col-4
+                        ], className='col-5'),
+                        html.Div(className='col-1'),
+                        # Lista de fallos de registro/sensor S2
+                        html.Div([
+                            dbc.Card([
+                                dbc.CardHeader([
+                                    html.H3('Fallos de registro/sensor', className='text-center'),
+                                ]),
+                                dbc.CardBody([
+                                    dbc.ListGroup(id='list-fal-s2'), 
+                                ]),
+                            ], color='danger', outline=True),#col-4
+                        ], className='col-5'),
+                        html.Div(className='col-1'),#col-1
+                    ], className='row'),#row
+                ], className='col-5'),                
+                html.Div(className='col-2'),
+                # Imagen
+                html.Img(src=app.get_asset_url("plant-s2.png"), className='mx-auto d-block col-4'),
                 
-                # Lista de fallos de registro/sensor S2
-                dbc.Card([
-                    html.Br(),
-                    # Titulo de la lista
-                    html.H2('Fallos de registro/sensor', className='text-center'),
-                    html.Br(),
-                    # Lista
-                    dbc.ListGroup(id='list-fal-s2'), 
-                    html.Br()
-                ], className='col-4', color='danger', outline=True),
-                html.Div(className='col-1'),
+                # html.Div(className='col-1'),
             ], className='row'),
             html.Br(),
             # Plot señal + histograma S2 
-            dcc.Dropdown(
-                id="signal-dropdown-s2",
-                options=[{'label': x, 'value': x} for x in columns_s2],
-                value='Percentage Iron Concentrate',
-                style={
-                    'color': colors['text']
-                },
-            ),
-            html.Div([
-                # Plot señal S1
+            html.Div([                
+                # Plot señal S2
                 html.Div([
-                    # Titulo del gráfico S2
-                    html.H3(
-                        id='header-signal-plot-s2',
-                        children='Signal plot',
-                        style={
-                            'textAlign': 'center',
-                            'color': colors['text']
+                        # Título del gráfico 
+                        html.Br(),
+                        html.H3(
+                            id='header-signal-plot-s2',
+                            children='Signal plot',
+                            style={
+                                'textAlign': 'center',
+                                'color': colors['text'],
                             }
-                    ),
-                    # Gráfico S2
-                    dcc.Graph(
-                        id="signal-s2",
-                        figure=dict(
-                            layout=dict(
-                                # plot_bgcolor=app_color["graph_bg"],
-                                # paper_bgcolor=app_color["graph_bg"],
-                            )
                         ),
-                    ),
-                ],className='signal-plot col-7'),
-                # Plot histograma S1
+                        # Gráfico S2
+                        dcc.Graph(
+                            id="signal-s2",
+                            figure=dict(
+                                layout=dict(
+                                    plot_bgcolor=colors["graph-bg"],
+                                    paper_bgcolor=colors["graph-bg"],
+                                )
+                            ),
+                        ),
+                        
+                    ],className='signal-plot col-5', style={'background': colors['graph-bg']}),
+                
+                #Dropdown S2
                 html.Div([
-                    # Titulo del histograma S2
+                    html.H3('Selector de señal'),
+                    dcc.Dropdown(
+                        id="signal-dropdown-s2",
+                        options=[{'label': x, 'value': x} for x in columns_s2],
+                        value='Flotation Column 02 Level',
+                        style={
+                            'color': colors['text-dropdown'],
+                            # 'background': colors['graph-bg']
+                        },
+                    ),
+                    html.Br(),
+                    # Carta informativa de la ID seleccionada S2
+                    html.Div([
+                        dbc.Card([
+                            dbc.CardHeader([
+                                html.H3('Información de la barra', className='text-center'),
+                            ]),
+                            dbc.CardBody([
+                                html.P("ID: ********", className='card-text text-left', id='card_info_id_s2'),
+                            ]),
+                        ], outline=True)
+                    ],className='rounded d-flex justify-content-center align-items-center'),#col-2
+                ], className='col-2 text-center'),
+                
+                # Plot histograma S2
+                html.Div([
+                    # Título del histograma de S2
+                    html.Br(),
                     html.H3(
                         id='header-histogram-s2',
                         children='Histogram',
@@ -570,24 +848,28 @@ page_2_layout = html.Div([
                             'color': colors['text']
                         }
                     ),
-                    # Histograma S2
+                    # Histograma de S2
                     dcc.Graph(
                         id="histogram-s2",
                         figure=dict(
                             layout=dict(
                                 barmode='overlay',
-                                # plot_bgcolor=app_color["graph_bg"],
-                                # paper_bgcolor=app_color["graph_bg"],
+                                plot_bgcolor=colors["graph-bg"],
+                                paper_bgcolor=colors["graph-bg"],
                             )
                         ),
                     ),
-                ],className='histogram-plot col-5'),
+                ],className='histogram-plot col-5', style={'background': colors['graph-bg']}),
             ], id='graficos-s2', className='row'),
         ]),
     ], id='tab-seccions'),
     html.Br(),
     dcc.Link('Go back to home', href='/')
 ])
+
+##############################################################################
+#                          05_2. PAGE-2 CALLBACKS                            #
+##############################################################################
 
 # Callback que actualiza la targeta de información de ID S1
 @app.callback(Output('card_info_id_s1', 'children'),
@@ -690,104 +972,9 @@ def gen_signal_s1(column, id_data):
             # Query que devuelve a partir de una id las 1000 muestras anteriores
             df = pd.read_sql(('SELECT * FROM signals WHERE id>{} AND id<={}'.format(id_data['id']-500, id_data['id']+500)), server_conn)
     
-    # Signal Plot S1
-    trace = dict(
-        type="scatter",
-        y=df[column],
-        line={"color": "#42C4F7"},
-        mode="lines",
-    )
+    trace, layout = get_signal_plot(df, column)
     
-    # Signal Layout S1
-    layout = dict(
-        # plot_bgcolor=app_color["graph_bg"],
-        # paper_bgcolor=app_color["graph_bg"],
-        font={"color": colors['text'], "size": size_font, "family": family_font,},
-        height=700,
-        xaxis={
-            "showline": True,
-            "zeroline": False,
-            "fixedrange": False,
-            "title": "Time Elapsed (hours)",
-            "ylabel": column,
-        },
-        yaxis={
-            "range": [
-                df[column].min() - 0.1*(df[column].max() - df[column].min()), 
-                df[column].max() + 0.1*(df[column].max() - df[column].min()),
-            ],
-            "showgrid": True,
-            "showline": True,
-            # "fixedrange": True,
-            "zeroline": False,
-            # "gridcolor": app_color["graph_line"],
-            "nticks": 10
-        },
-    )
-    
-    # Datos historicos del histograma S1
-    trace2 = dict(
-        type="histogram",
-        name='Historical',
-        x=df_raw[column],
-        nbins=10,
-        bingroup=1,
-        histnorm='percent',
-        label='historical',
-        marker={
-            'line':{
-                'width': 1,
-                'color': colors['histogram-hist-br'],
-            },
-            'color': colors['histogram-hist'],
-        },
-    )
-    
-    # Datos seleccionados con la id para el histograma S1
-    trace3 = dict(
-        type="histogram",
-        name='Actual',
-        x=df[column],
-        bingroup=1,
-        nbins=10,
-        histnorm='percent',
-        opacity=0.75,
-        label='current',
-        marker={
-            'line':{
-                'width': 1,
-                'color': colors['histogram-act-br'],
-            },
-            'color': colors['histogram-act'],
-        },
-    )
-    
-    # Layout del histograma S1
-    layout2=dict(
-        barmode='overlay',
-        height=700,
-        # plot_bgcolor=app_color["graph_bg"],
-        # paper_bgcolor=app_color["graph_bg"],
-        font={"color": colors['text'], "size": size_font, "family": family_font,},
-        shapes=[
-            {
-                'type':"line",
-                # 'xref':df[df['id']==id_data['id']][column].iloc[0],
-                'yref':'paper',
-                'x0':df[df['id']==id_data['id']][column].iloc[0],
-                'y0':0,
-                'x1':df[df['id']==id_data['id']][column].iloc[0], 
-                'y1':0.95,
-                'line':dict(
-                    color=colors['plantplot-l-red'],
-                    width=4,
-            
-                ),
-                # 'layer':'below'
-            }
-        ],
-    )
-
+    trace2, trace3, layout2 = get_histogram(df, column, id_data['id'])
     return [dict(data=[trace], layout=layout), dict(data=[trace2, trace3], layout=layout2)]
 
 # Callback que actualiza el plot y el histograma de la señal al cambiar de señal con el dropdown de S2
@@ -806,104 +993,10 @@ def gen_signal_s2(column, id_data):
             # Query que devuelve a partir de una id las 1000 muestras anteriores
             df = pd.read_sql(('SELECT * FROM signals WHERE id>{} AND id<={}'.format(id_data['id']-500, id_data['id']+500)), server_conn)
     
-    # Signal plot S2
-    trace = dict(
-        type="scatter",
-        y=df[column],
-        line={"color": "#42C4F7"},
-        mode="lines",
-    )
-
-    # Signal Layout S2
-    layout = dict(
-        # plot_bgcolor=app_color["graph_bg"],
-        # paper_bgcolor=app_color["graph_bg"],
-        font={"color": colors['text'], "size": size_font, "family": family_font,},
-        height=700,
-        xaxis={
-            "showline": True,
-            "zeroline": False,
-            "fixedrange": False,
-            "title": "Time Elapsed (hours)",
-            "ylabel": column,
-        },
-        yaxis={
-            "range": [
-                df_raw[column].min() - 0.1*(df_raw[column].max() - df_raw[column].min()), 
-                df_raw[column].max() + 0.1*(df_raw[column].max() - df_raw[column].min()),
-            ],
-            "showgrid": True,
-            "showline": True,
-            # "fixedrange": True,
-            "zeroline": False,
-            # "gridcolor": app_color["graph_line"],
-            "nticks": 20
-        },
-    )
+    trace, layout = get_signal_plot(df, column)
     
-    # Datos historicos del histograma S2
-    trace2 = dict(
-        type="histogram",
-        name='Historical',
-        x=df_raw[column],
-        nbins=10,
-        bingroup=1,
-        histnorm='percent',
-        label='historical',
-        marker={
-            'line':{
-                'width': 1,
-                'color': colors['histogram-hist-br'],
-            },
-            'color': colors['histogram-hist'],
-        },
-    )
+    trace2, trace3, layout2 = get_histogram(df, column, id_data['id'])
     
-    # Datos seleccionados con la id para el histograma S2
-    trace3 = dict(
-        type="histogram",
-        name='Actual',
-        x=df[column],
-        bingroup=1,
-        nbins=10,
-        histnorm='percent',
-        opacity=0.75,
-        label='current',
-        marker={
-            'line':{
-                'width': 1,
-                'color': colors['histogram-act-br'],
-            },
-            'color': colors['histogram-act'],
-        },
-    )
-    
-    # Layout del histograma S2
-    layout2=dict(
-        barmode='overlay',
-        height=700,
-        # plot_bgcolor=app_color["graph_bg"],
-        # paper_bgcolor=app_color["graph_bg"],
-        font={"color": colors['text'], "size": size_font, "family": family_font,},
-        shapes=[
-            {
-                'type':"line",
-                # 'xref':df[df['id']==id_data['id']][column].iloc[0],
-                'yref':'paper',
-                'x0':df[df['id']==id_data['id']][column].iloc[0],
-                'y0':0,
-                'x1':df[df['id']==id_data['id']][column].iloc[0], 
-                'y1':0.95,
-                'line':dict(
-                    color=colors['plantplot-l-red'],
-                    width=4,
-            
-                ),
-                # 'layer':'below'
-            }
-        ],
-    )
-
     return [dict(data=[trace], layout=layout), dict(data=[trace2, trace3], layout=layout2)]
 
 # Update the index
