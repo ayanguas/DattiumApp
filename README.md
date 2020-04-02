@@ -9,6 +9,7 @@ Aplicación de visualización en la nube de Dattium
 
 #### PostgreSQL
 1. Instalar [*PostgreSQL*](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads) version 12.
+![alt text](https://github.com/ayanguas/DattiumApp//tree/master/img/1_download_psql.png "Download PostgreSQL DB")
 2. [**Opcional**] Para la conexión en remoto: Configuración de *PostgreSQL* [[1]](https://blog.bigbinary.com/2016/01/23/configure-postgresql-to-allow-remote-connection.html)
     1. Abrimos con un editor de texto el archivo *PostgreSQL/12/data/postgresql.conf* y modificar la linea *listen_addres = 'localhost'* por **listen_addres = '*'**
     2. Abrimos con un editor de texto el archivo *~/PostgreSQL/12/data/pg_hba.conf* y se añade la siguiente linea *host all all 0.0.0.0/0 md5* justo despues de la linea *host all all 127.0.0.1/32 md5*. En windows la carpeta PostgreSQL se encuentra en *C:/Archivos de programa/PostgreSQL*.
