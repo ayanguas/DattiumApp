@@ -23,7 +23,7 @@ Aplicación de visualización en la nube de Dattium
     
     
     ##### Creación BBDD
-    ![Create DB|1124 x 949, 20%](https://github.com/ayanguas/DattiumApp/blob/master/img/2_create_db.png?raw=true "Create DB")
+    ![Create DB](https://github.com/ayanguas/DattiumApp/blob/master/img/2_create_db.png?raw=true "Create DB")
     
     
     ##### Nombre BBDD
@@ -34,7 +34,7 @@ Aplicación de visualización en la nube de Dattium
     
     
     ##### Creación usuario
-    ![Create User](https://github.com/ayanguas/DattiumApp/blob/master/img/4_create_user.png =60x)
+    ![Create User](https://github.com/ayanguas/DattiumApp/blob/master/img/4_create_user.png)
     
     
     ##### Nombre usuario
