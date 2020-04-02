@@ -19,7 +19,7 @@ Aplicación de visualización en la nube de Dattium
     ![Create DB](https://github.com/ayanguas/DattiumApp/blob/master/img/2_create_db.png?raw=true "Create DB")
     ![Name DB](https://github.com/ayanguas/DattiumApp/blob/master/img/3_name_db.png?raw=true "Name DB")
     2. Click derecho sobre la PostgreSQL 12 y seleccionamos crear un nuevo Login/Role Group con nombre de usuario **test** y password **test123** (se cambia en la pestaña *Definition*), finalmente, le habilitamos todos los permisos, en la pestaña *privileges*, habilitaremos las opciones *Can login?* y *Superuser*
-    ![Create User](https://github.com/ayanguas/DattiumApp/blob/master/img/4_create_user.png=100x100 "Create User")
+    ![Create User](https://github.com/ayanguas/DattiumApp/blob/master/img/4_create_user.png=50x50 "Create User")
     ![Name User](https://github.com/ayanguas/DattiumApp/blob/master/img/5_name_user.png "Name User")
     ![Password User](https://github.com/ayanguas/DattiumApp/blob/master/img/6_pswrd_user.png "Password User")
     ![Privilege User](https://github.com/ayanguas/DattiumApp/blob/master/img/7_privilages_user.png "Privilege User")
