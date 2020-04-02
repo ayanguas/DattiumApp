@@ -19,7 +19,7 @@ from sqlalchemy import create_engine
 from numpy.random import randint
 from datetime import timedelta, date
 
-##############################################################################
+#%%#############################################################################
 #                            01. CONFIGURACIÓN                               #
 ##############################################################################
 
@@ -98,7 +98,7 @@ size_font = 22 # Graph Text Size
 size_font_cards = 18 # Graph Text Size
 pp_size = '500px' # Plant plot graph size
 
-##############################################################################
+#%%#############################################################################
 #                             02. FUNCIONES                                  #
 ##############################################################################
 
@@ -373,7 +373,7 @@ def get_histogram(df, column, id_data):
         ],
     )
     return trace, trace2, layout
-##############################################################################
+#%%#############################################################################
 #                              03. LAYOUT                                    #
 ##############################################################################
 
@@ -382,7 +382,7 @@ app.layout = html.Div([
     # Store, sirve para guardar datos y poder acceder a ellos entre paginas
     dcc.Store(id='store-p2-layout'),
     dcc.Store(id='store-id-clicked'),
-    # Sirve para poder crear distintas paginas www.dattiumapp.com/page-1 o www.dattiumapp.com/page-2
+    # Sirve para poder crear distintas paginas www.dattiumapp.com/seccions o www.dattiumapp.com/reports
     dcc.Location(id='url', refresh=False),
     # Contenido de las paginas
     html.Div(id='page-content')
@@ -400,12 +400,12 @@ navbar = dbc.Navbar([
         ),
     ], className='lg', color=colors['navbar'])
 
-##############################################################################
-#                             04_1. PAGE-1                                   #
+#%%#############################################################################
+#                     04_1. PAGE-1 (GLOBALIDAD D PLANTA)                     #
 ##############################################################################
     
 # Pagina 1, imagen de la planta y un gráfico general con el comportamiento de esta
-page_1_layout = html.Div([
+home_page_layout = html.Div([
     # Barra de navegación de la aplicación
     navbar,
     dbc.Tabs([
@@ -495,7 +495,7 @@ page_1_layout = html.Div([
                             ], className='row'),
                         ], className='col-3'),
                         # html.Br(),
-                        html.Div(className='col-1'),
+                        # html.Div(className='col-1'),º
                         html.Div([
                             html.H5('Fecha final'),
                             html.Div([
@@ -535,7 +535,7 @@ page_1_layout = html.Div([
     ], className = ''),   
 ])
 
-##############################################################################
+#%%#############################################################################
 #                          04_2. PAGE-1 CALLBACKS                            #
 ##############################################################################
 
@@ -623,18 +623,18 @@ def change_page(click_data, click_data_hist):
                 fal_s1 = get_cards_layout(col_fal_s1, False)
                 des_s2 = get_cards_layout(col_des_s2, True)
                 fal_s2 = get_cards_layout(col_fal_s2, False)
-    return [{'des_s1': (des_s1), 'fal_s1': (fal_s1), 'des_s2': (des_s2), 'fal_s2': (fal_s2)}, '/page-1', {'id': point_id}]
+    return [{'des_s1': (des_s1), 'fal_s1': (fal_s1), 'des_s2': (des_s2), 'fal_s2': (fal_s2)}, '/seccions', {'id': point_id}]
 
 
-##############################################################################
-#                             05_1. PAGE-2                                   #
+#%%#############################################################################
+#                          05_1. PAGE-2 (SECCIONES)                          #
 ##############################################################################
 
 # Página 2, dividida en dos tabs S1 y S2, en cada una de ellas tenemos la imagen de la seccion, la lista de 
 # señales desviadas, la lista de las señales con fallos en el sensor/registro, la señal sobre el tiempo,
 # y un histograma (con datos antiguos y un periodo de datos nuevos) junto a un dropdown para seleccionar las
 # señales
-page_2_layout = html.Div([
+seccions_page_layout = html.Div([
     # Barra de navegación de la App
     navbar,
     # Dividimos la página en dos mediante tabs, para la S1 y S2
@@ -892,7 +892,7 @@ page_2_layout = html.Div([
     dcc.Link('Go back to home', href='/')
 ])
 
-##############################################################################
+#%%#############################################################################
 #                          05_2. PAGE-2 CALLBACKS                            #
 ##############################################################################
 
@@ -1028,11 +1028,16 @@ def gen_signal_s2(column, id_data):
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
-    if pathname == '/page-1':
-        return page_2_layout
+    if pathname == '/seccions':
+        return seccions_page_layout
+    # elif pathname == /'/reports'
     else:
-        return page_1_layout
+        return home_page_layout
     # You could also return a 404 "URL not found" page here
+
+#%%#############################################################################
+#                        06_1. PAGE-3 (REPORTS)                              #
+##############################################################################
 
 if __name__ == '__main__':
     app.run_server(debug=False)
