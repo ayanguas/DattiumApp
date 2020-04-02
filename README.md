@@ -16,7 +16,13 @@ Aplicación de visualización en la nube de Dattium
 3. Abrir PgAdmin, programa para la gestión de los servidores y BBDD *PostgreSQL*.
 4. Crear la BBDD en el servidor PostgreSQL 12
     1. Click derecho sobre PostgreSQL 12 y seleccionamos crear una nueva BBDD con el nombre **DattiumApp**
+    ![Create DB](https://github.com/ayanguas/DattiumApp/blob/master/img/2_create_db.png?raw=true "Create DB")
+    ![Name DB](https://github.com/ayanguas/DattiumApp/blob/master/img/3_name_db.png?raw=true "Name DB")
     2. Click derecho sobre la PostgreSQL 12 y seleccionamos crear un nuevo Login/Role Group con nombre de usuario **test** y password **test123** (se cambia en la pestaña *Definition*), finalmente, le habilitamos todos los permisos, en la pestaña *privileges*, habilitaremos las opciones *Can login?* y *Superuser*
+    ![Create User](https://github.com/ayanguas/DattiumApp/blob/master/img/4_create_user.png?raw=true "Create User")
+    ![Name User](https://github.com/ayanguas/DattiumApp/blob/master/img/5_name_user.png?raw=true "Name User")
+    ![Password User](https://github.com/ayanguas/DattiumApp/blob/master/img/6_pswrd_user.png?raw=true "Password User")
+    ![Privilege User](https://github.com/ayanguas/DattiumApp/blob/master/img/7_privilages_user.png?raw=true "Privilege User")
 #### Environment
 5. Abrir el terminal de conda, utilizando el commando *cd* nos posicionaremos en la carpeta del proyecto y ejecutaremos el siguiente comando *conda env create -f dependencies/DattiumApp.yml*. Ejemplo en terminal:
     - *cd C:\Git\DattiumApp*
