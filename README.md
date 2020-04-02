@@ -34,7 +34,7 @@ Aplicación de visualización en la nube de Dattium
     
     
     ##### Creación usuario
-    ![Create User](https://github.com/ayanguas/DattiumApp/blob/master/img/4_create_user.png =60x "Create User")
+    ![Create User](https://github.com/ayanguas/DattiumApp/blob/master/img/4_create_user.png =60x)
     
     
     ##### Nombre usuario
