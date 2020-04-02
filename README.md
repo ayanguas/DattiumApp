@@ -63,4 +63,4 @@ Aplicación de visualización en la nube de Dattium
 11. Accedemos al browser a: http://127.0.0.1:8050/
 
 
-Una vez realizado los pasos 1-7, cada vez que se quiera abrir la aplicación simplemente repitiendo los pasos 10 y 11 será suficiente, siempre que tengamos el environment DattiumApp activado paso 2.
+Una vez realizado los pasos 1-7, cada vez que se quiera abrir la aplicación simplemente repitiendo los pasos 10 y 11 será suficiente, siempre que tengamos el environment DattiumApp activado paso 6.
