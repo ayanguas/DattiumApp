@@ -11,7 +11,7 @@ Aplicación de visualización en la nube de Dattium
 2. Activamos el environment: *conda activate DattiumApp* 
 3. Descomprimir el archivo *MiningProcess_Flotation_Plant_Database.csv.zip*
 4. Instalar [*PostgreSQL*](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads) version 12.
-5. [[Opcional remoto]] Configuración de *PostgreSQL* [[1]](https://blog.bigbinary.com/2016/01/23/configure-postgresql-to-allow-remote-connection.html)
+5. [**Opcional para conexión en remoto**] Configuración de *PostgreSQL* [[1]](https://blog.bigbinary.com/2016/01/23/configure-postgresql-to-allow-remote-connection.html)
     1. Abrimos con un editor de texto el archivo *PostgreSQL/12/data/postgresql.conf* y modificar la linea *listen_addres = 'localhost'* por **listen_addres = '*'**
     2. Abrimos con un editor de texto el archivo *~/PostgreSQL/12/data/pg_hba.conf* y se añade la siguiente linea *host all all 0.0.0.0/0 md5* justo despues de la linea *host all all 127.0.0.1/32 md5*. En windows la carpeta PostgreSQL se encuentra en *C:/Archivos de programa/PostgreSQL*.
 6. Abrir PgAdmin, programa para la gestión de los servidores y BBDD *PostgreSQL*.
