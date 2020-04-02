@@ -7,7 +7,9 @@ Aplicación de visualización en la nube de Dattium
 
 ## Instrucciones
 
-1. Abrir el terminal de conda, utilizando el commando *cd* nos posicionaremos en la carpeta del proyecto y ejecutaremos el siguiente comando: *conda env create -f dependencies/DattiumApp.yml*
+1. Abrir el terminal de conda, utilizando el commando *cd* nos posicionaremos en la carpeta del proyecto y ejecutaremos el siguiente comando: 
+*cd C:\Git\DattiumApp*
+*conda env create -f dependencies/DattiumApp.yml*
 2. Activamos el environment: *conda activate DattiumApp* 
 3. Descomprimir el archivo *MiningProcess_Flotation_Plant_Database.csv.zip*
 4. Instalar [*PostgreSQL*](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads) version 12.
