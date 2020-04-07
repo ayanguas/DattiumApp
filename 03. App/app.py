@@ -17,9 +17,9 @@ from dash.dependencies import Input, Output, State
 import dash_auth
 from sqlalchemy import create_engine
 from numpy.random import randint
-from datetime import timedelta, date
+from datetime import timedelta, datetime, date
 
-#%%#############################################################################
+#%%###########################################################################
 #                            01. CONFIGURACIÓN                               #
 ##############################################################################
 
@@ -31,8 +31,10 @@ dark = True
 # Script con las configuraciones CSS de Bootstrap
 if dark:
     external_stylesheets =  [dbc.themes.DARKLY] #SLATE / DARKLY /SUPERHERO / BOOTSTRAP
+    navbar_image = "logo-dattium-navbar-dark2.png"
 else:
     external_stylesheets =  [dbc.themes.BOOTSTRAP] #SLATE / DARKLY /SUPERHERO / BOOTSTRAP
+    navbar_image = "logo-dattium-navbar.png"
     
 # Conexion a la BBDD postgreSQL con el usuario test, contraseña test123 y en la BBDD DattiumApp        
 server_conn = create_engine('postgresql://test:test123@{}:5432/DattiumApp'.format(postgre_ip))
@@ -95,10 +97,13 @@ colors = {
 # Parametros de configuración del texto de los gráficos
 family_font = 'Arial, sans-serif' # Graph Text Font
 size_font = 22 # Graph Text Size
-size_font_cards = 18 # Graph Text Size
+size_font_summary = 18 # Summary Graph Text Size
+size_font_cards = 18 # Font Text Size
 pp_size = '500px' # Plant plot graph size
+summary_graph_size = '400px' # Summary graphs size
+navbar_logo_size = "40px" # Navbar logo size
 
-#%%#############################################################################
+#%%###########################################################################
 #                             02. FUNCIONES                                  #
 ##############################################################################
 
@@ -373,10 +378,272 @@ def get_histogram(df, column, id_data):
         ],
     )
     return trace, trace2, layout
-#%%#############################################################################
+
+# Devuelve una tabla en HTML a partir de un DF
+def make_table(df):
+    """ Return a dash definition of an HTML table for a Pandas dataframe """
+    table = []
+    for index, row in df.iterrows():
+        html_row = []
+        for i in range(len(row)):
+            html_row.append(html.Td([row[i]]))
+        if index%2 == 0:
+            table.append(html.Tr(html_row))
+        else:
+            table.append(html.Tr(html_row, className='secondary'))
+    return table
+
+# Devuelve la tabla resumen por producto
+def product_summary_table(df):
+    # df = pd.read_sql(('SELECT * FROM signals'), server_conn)
+    max_p = df.groupby('product').count()['id'].idxmax() # Producto más fabricado
+    max_q = df.groupby('quality').count()['id'].idxmax() # Calidad más fabricada
+    max_pq = df.groupby(['product', 'quality']).count()['id'].idxmax() # Producto-Calidad más fabricado
+    fail_p = df[df['label']<4].groupby('product').count()['id'].idxmax() # Producto con más fallos
+    fail_q = df[df['label']<4].groupby('quality').count()['id'].idxmax() # Calidad con más fallos
+    fail_pq = df[df['label']<4].groupby(['product', 'quality']).count()['id'].idxmax() # Producto con más fallos
+    df_table = pd.DataFrame(data=[['Producto + fabricado', 'Producto ' + str(max_p)],\
+                                  ['Calidad + fabricada', 'Calidad ' + str(max_q)],\
+                                  ['Producto/Calidad + fabricada', 'Producto ' + str(max_pq[0])+'/'+\
+                                   'Calidad ' + str(max_pq[1])],
+                                  ['Producto con + fallos', 'Producto ' + str(fail_p)],\
+                                  ['Calidad con + fallos', 'Calidad ' + str(fail_q)],\
+                                  ['Producto/Calidad con + fallos', 'Producto ' + str(fail_pq[0])+'/'+\
+                                   'Calidad ' + str(fail_pq[1])]])
+    product_table = make_table(df_table)
+    return product_table
+
+# Devuelve la tabla resumen por producto
+def seccion_summary_table(df):
+    seccions = ['S1', 'S2', 'S3']
+    fail_s = 'S-'
+    aux_fail_s = -1
+    for seccion in seccions:
+        if aux_fail_s < len(df[df[f'label_{seccion}']<1]):
+            fail_s = seccion
+    df_table = pd.DataFrame(data=[['Seccion con + fallos', fail_s]])
+    seccion_table = make_table(df_table)
+    return seccion_table
+# Devuelve el layout de los tabs de reports
+def summary_tab_layout(tab):
+    if tab == 'products':
+        table = product_summary_table(df_raw)
+        data_bar, layout_bar = bar_graph_product_summary(df_raw, 'product')
+        titulo_line_plot = 'Buenas por producto/calidad/mes'
+        data_line, layout_line = liner_graph_product_summary(df_raw, df_raw['product'].unique(),\
+                                                df_raw['quality'].unique())    
+        pq_selector = [
+            dbc.FormGroup([
+                dbc.Label("Selector de producto"),
+                dbc.Checklist(
+                    options=[{"label": f"Product {product}", "value": product}\
+                             for product in np.sort(df_raw['product'].unique())],                
+                    value=df_raw['product'].unique(),
+                    id="checklist-product",
+                ),
+            ]),
+            dbc.FormGroup([
+                dbc.Label("Selector de calidad"),
+                dbc.Checklist(
+                    options=[{"label": f"Product {quality}", "value": quality}\
+                             for quality in np.sort(df_raw['quality'].unique())],                
+                    value=df_raw['quality'].unique(),
+                    id="checklist-quality",
+                    switch=True,
+                ),
+            ]),
+        ]
+    else:
+        table = seccion_summary_table(df_raw)
+        data_bar, layout_bar = bar_graph_seccions_summary(df_raw)
+        titulo_line_plot = 'Buenas por seccion/mes'
+        data_line, layout_line = liner_graph_seccions_summary(df_raw, '1')
+        pq_selector = pq_selector = [
+            dbc.FormGroup([
+                dbc.Label("Selector de seccion"),
+                dbc.RadioItems(
+                    options=[{"label": f"Seccion {seccion}", "value": seccion}\
+                             for seccion in [1,2,3]],                
+                    value=1,
+                    id="checklist-seccion",
+                ),
+            ]),
+        ]
+                    
+    return html.Div([
+        html.Br(),
+            html.Div([
+                # html.Div(className='col-1'),
+                html.Div([
+                    # html.Div(className='col-1'),
+                    html.H2(f'Resumen de {tab}'),
+                    dbc.Table(table, 
+                              striped=True, 
+                                # bordered=True, 
+                              responsive=True,
+                              hover=True,
+                              dark=True,
+                              className='table mt-5',
+                              id=f'summary-table-{tab}')
+                ], className='col-3 ml-5'),
+                # html.Div(className='col-1'),
+                html.Div([
+                    html.H4('Buenas vs. Malas', className='text-center'),
+                    dcc.Graph(
+                        id=f'bar-plot-{tab}',
+                        figure=dict(
+                            data = data_bar,
+                            layout=layout_bar,
+                        ),
+                    ),
+                ], className='col-3 ml-5'),
+                html.Div(className='col-1'),
+                html.Div([
+                    html.H4(titulo_line_plot, className='text-center'),
+                    dcc.Graph(
+                        id=f'time-plot-{tab}',
+                        figure=dict(
+                            data = [data_line],
+                            layout = layout_line,
+                        ),
+                    ),
+                ], className='col-3'),
+                html.Div(pq_selector, className='col-1 mt-4'),
+            ], className='row'),])
+
+# Devuelve el gráfico de barras de barras buenas/malas en funcion de una o varias columnas
+def bar_graph_product_summary(df, column):
+    todas = df.groupby('product').count()['id']
+    buenas = df[df['label']>=4].groupby('product').count()['id']
+    malas = df[df['label']<4].groupby('product').count()['id']
+    trace = dict(
+        type='bar',
+        name='Buenas',
+        x = ['Product ' + str(idx) for idx in todas.index],
+        y = ((buenas/todas)*100).values,
+        marker = dict(
+            color = colors['plantplot-mk-green'], 
+        ),
+    )
+    trace2 = dict(
+        type='bar',
+        name='Malas',
+        x = ['Product ' + str(idx) for idx in todas.index],
+        y = ((malas/todas)*100).values,
+        marker = dict(
+            color = colors['plantplot-mk-red'], 
+        ),
+    )
+    layout = dict(
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        xaxis={
+            "tickangle": 30,
+        },
+    )
+    
+    return [trace, trace2], layout
+
+def liner_graph_product_summary(df, product, quality):
+    df['month'] = df['date'].apply(lambda x: datetime(x.year, x.month, 1))
+    todas = df[(df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('month').count()['id']
+    buenas = df[(df['label']>=4) & (df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('month').count()['id']
+    trace = dict(
+        type='line',
+        x = todas.index,
+        y = ((buenas/todas)*100).values,
+    )
+    layout = dict(
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        xaxis={
+            "tickangle": 30,
+        },
+    )
+    return trace, layout
+
+# Devuelve el gráfico de barras de barras buenas/malas por seccion
+def bar_graph_seccions_summary(df):
+    secciones = [1 ,2, 3]
+    todas = []
+    buenas = []
+    malas = []
+    for seccion in secciones:
+        todas = np.append(todas, len(df))
+        buenas = np.append(buenas, len(df[df[f'label_S{seccion}']>=1]))
+        malas = np.append(malas, len(df[df[f'label_S{seccion}']<1]))
+
+    trace = dict(
+        type='bar',
+        name='Buenas',
+        x = [f'Seccion {seccion}' for seccion in secciones],
+        y = ((buenas/todas)*100),
+        marker = dict(
+            color = colors['plantplot-mk-green'], 
+        ),
+    )
+    trace2 = dict(
+        type='bar',
+        name='Malas',
+        x = [f'Seccion {seccion}' for seccion in secciones],
+        y = ((malas/todas)*100),
+        marker = dict(
+            color = colors['plantplot-mk-red'], 
+        ),
+    )
+    layout = dict(
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        xaxis={
+            "tickangle": 30,
+        },
+    )
+    
+    return [trace, trace2], layout
+
+def liner_graph_seccions_summary(df, seccion):
+    df['month'] = df['date'].apply(lambda x: datetime(x.year, x.month, 1))
+    todas = df.groupby('month').count()['id']
+    buenas = df[(df[f'label_S{seccion}']>0)].groupby('month').count()['id']
+    trace = dict(
+        type='line',
+        x = todas.index,
+        y = ((buenas/todas)*100).values,
+    )
+    layout = dict(
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        xaxis={
+            "tickangle": 30,
+        },
+    )
+    return trace, layout
+
+#%%###########################################################################
 #                              03. LAYOUT                                    #
 ##############################################################################
 
+# Barra de navegacion de la aplicacion
+navbar = dbc.Navbar([
+            html.A(
+                # Imagen con el logo de Dattium que nos llevara a la página principal de la App
+                # Use row and col to control vertical alignment of logo / brand
+                html.Img(src=app.get_asset_url(navbar_image),\
+                                          height=navbar_logo_size),
+                href="/",
+                className='float-right col-2'
+            ),
+            dbc.Nav([
+                # dbc.NavbarToggler(id="navbar-toggler"),
+                dbc.NavItem(dbc.NavLink("Home", href="/")),
+                dbc.NavItem(dbc.NavLink("Reports", href="/reports")),
+            ]),
+    ], className='lg', color=colors['navbar'])
+    
 # Layout de la app
 app.layout = html.Div([
     # Store, sirve para guardar datos y poder acceder a ellos entre paginas
@@ -384,30 +651,32 @@ app.layout = html.Div([
     dcc.Store(id='store-id-clicked'),
     # Sirve para poder crear distintas paginas www.dattiumapp.com/seccions o www.dattiumapp.com/reports
     dcc.Location(id='url', refresh=False),
+    navbar,
     # Contenido de las paginas
     html.Div(id='page-content')
 ])
 
-# Barra de navegacion de la aplicacion
-navbar = dbc.Navbar([
-        html.A(
-            # Imagen con el logo de Dattium que nos llevara a la página principal de la App
-            # Use row and col to control vertical alignment of logo / brand
-            html.Img(src=app.get_asset_url("logo-dattium-navbar.png"),\
-                                     height="45px"),
-            href="/",
-            className='float-right'
-        ),
-    ], className='lg', color=colors['navbar'])
+# Update the index
+@app.callback(Output('page-content', 'children'),
+              [Input('url', 'pathname')])
+def display_page(pathname):
+    if pathname == '/seccions':
+        return seccions_page_layout
+    elif pathname == '/reports':
+         return reports_page_layout
+    else:
+        return home_page_layout
+    # You could also return a 404 "URL not found" page here
 
-#%%#############################################################################
-#                     04_1. PAGE-1 (GLOBALIDAD D PLANTA)                     #
+
+#%%###########################################################################
+#                             04_1. HOME-PAGE                                #
 ##############################################################################
     
 # Pagina 1, imagen de la planta y un gráfico general con el comportamiento de esta
 home_page_layout = html.Div([
     # Barra de navegación de la aplicación
-    navbar,
+    # navbar,
     dbc.Tabs([
         dbc.Tab([
             # Content
@@ -535,8 +804,8 @@ home_page_layout = html.Div([
     ], className = ''),   
 ])
 
-#%%#############################################################################
-#                          04_2. PAGE-1 CALLBACKS                            #
+#%%###########################################################################
+#                         04_2. HOME-PAGE CALLBACKS                          #
 ##############################################################################
 
 # Callback que pausa la actualización automática del gráfico
@@ -626,8 +895,8 @@ def change_page(click_data, click_data_hist):
     return [{'des_s1': (des_s1), 'fal_s1': (fal_s1), 'des_s2': (des_s2), 'fal_s2': (fal_s2)}, '/seccions', {'id': point_id}]
 
 
-#%%#############################################################################
-#                          05_1. PAGE-2 (SECCIONES)                          #
+#%%###########################################################################
+#                           05_1. SECCIONS-PAGE                              #
 ##############################################################################
 
 # Página 2, dividida en dos tabs S1 y S2, en cada una de ellas tenemos la imagen de la seccion, la lista de 
@@ -636,7 +905,7 @@ def change_page(click_data, click_data_hist):
 # señales
 seccions_page_layout = html.Div([
     # Barra de navegación de la App
-    navbar,
+    # navbar,
     # Dividimos la página en dos mediante tabs, para la S1 y S2
     dbc.Tabs([
         # Tab S1
@@ -892,8 +1161,8 @@ seccions_page_layout = html.Div([
     dcc.Link('Go back to home', href='/')
 ])
 
-#%%#############################################################################
-#                          05_2. PAGE-2 CALLBACKS                            #
+#%%###########################################################################
+#                        05_2. SECCIONS-PAGE CALLBACKS                       #
 ##############################################################################
 
 # Callback que actualiza la targeta de información de ID S1
@@ -1024,20 +1293,55 @@ def gen_signal_s2(column, id_data):
     
     return [dict(data=[trace, trace2], layout=layout), dict(data=[trace3, trace4], layout=layout2)]
 
-# Update the index
-@app.callback(Output('page-content', 'children'),
-              [Input('url', 'pathname')])
-def display_page(pathname):
-    if pathname == '/seccions':
-        return seccions_page_layout
-    # elif pathname == /'/reports'
-    else:
-        return home_page_layout
-    # You could also return a 404 "URL not found" page here
-
-#%%#############################################################################
-#                        06_1. PAGE-3 (REPORTS)                              #
+#%%###########################################################################
+#                           06_1. REPORTS-PAGE                               #
 ##############################################################################
 
+# Página con los informes por seccion y producto
+reports_page_layout = html.Div([
+    dbc.Tabs([
+        dbc.Tab(label='Resumen por producto', tab_id='products'), 
+        dbc.Tab(label='Resumen por seccion', tab_id='seccions'),
+        dbc.Tab(label='Resumen', tab_id='all'),
+    ], id='summary-tabs', active_tab='products'),
+    html.Div(id='summary-tab-content')
+])
+
+#%%###########################################################################
+#                      06_2. REPORTS-PAGE CALLBACKS                          #
+##############################################################################
+
+# Callback que modifica el contenido de la página en función del Tab activo.
+@app.callback(
+    Output("summary-tab-content", "children"),
+    [Input("summary-tabs", "active_tab")],
+)
+def render_tab_content(active_tab):    
+    if active_tab == "products":
+        return summary_tab_layout('products')
+    elif active_tab == "seccions":
+        return summary_tab_layout('seccions')
+    else: 
+        return [summary_tab_layout('products'),
+                summary_tab_layout('seccions')]
+    
+@app.callback(
+    Output("time-plot-products", "figure"),
+    [Input("checklist-product", "value"), Input("checklist-quality", "value"),]
+)
+def checklist_product_trace(ckd_product, ckd_quality):
+    trace, layout = liner_graph_product_summary(df_raw, ckd_product, ckd_quality)
+    return dict(data=[trace], layout=layout)
+
+@app.callback(
+    Output("time-plot-seccions", "figure"),
+    [Input("checklist-seccion", "value")]
+)
+def checklist_product_trace(ckd_seccion):
+    trace, layout = liner_graph_seccions_summary(df_raw, ckd_seccion)
+    return dict(data=[trace], layout=layout)
+#%%###########################################################################
+#                              07. MAIN                                      #
+##############################################################################
 if __name__ == '__main__':
     app.run_server(debug=False)

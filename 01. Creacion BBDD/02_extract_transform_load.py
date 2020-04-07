@@ -39,6 +39,8 @@ df['label_S1'] = np.random.choice(3, len(df), p=[0.05, 0.15, 0.8])
 df['label_S2'] = np.random.choice(3, len(df), p=[0.05, 0.15, 0.8])
 df['label_S3'] = np.random.choice(3, len(df), p=[0.05, 0.15, 0.8])
 df['label'] = df['label_S1'] + df['label_S2'] + df['label_S3']
+df['product'] = np.random.choice(3, len(df), p=[0.3334, 0.3333, 0.3333])
+df['quality'] = np.random.choice(3, len(df), p=[0.3333, 0.3333, 0.3334])
 
 ##############################################################################
 #                               03_LOAD                                      #
