@@ -31,7 +31,7 @@ dark = True
 # Script con las configuraciones CSS de Bootstrap
 if dark:
     external_stylesheets =  [dbc.themes.DARKLY] #SLATE / DARKLY /SUPERHERO / BOOTSTRAP
-    navbar_image = "logo-dattium-navbar-dark.png"
+    navbar_image = "logo-dattium-navbar-dark2.png"
 else:
     external_stylesheets =  [dbc.themes.BOOTSTRAP] #SLATE / DARKLY /SUPERHERO / BOOTSTRAP
     navbar_image = "logo-dattium-navbar.png"
@@ -97,9 +97,11 @@ colors = {
 # Parametros de configuración del texto de los gráficos
 family_font = 'Arial, sans-serif' # Graph Text Font
 size_font = 22 # Graph Text Size
-size_font_cards = 18 # Graph Text Size
+size_font_summary = 18 # Summary Graph Text Size
+size_font_cards = 18 # Font Text Size
 pp_size = '500px' # Plant plot graph size
 summary_graph_size = '400px' # Summary graphs size
+navbar_logo_size = "40px" # Navbar logo size
 
 #%%###########################################################################
 #                             02. FUNCIONES                                  #
@@ -426,101 +428,87 @@ def seccion_summary_table(df):
 def summary_tab_layout(tab):
     if tab == 'products':
         table = product_summary_table(df_raw)
-        data_bar = bar_graph_product_summary(df_raw, 'product')
+        data_bar, layout_bar = bar_graph_product_summary(df_raw, 'product')
         titulo_line_plot = 'Buenas por producto/calidad/mes'
-        data_line = liner_graph_product_summary(df_raw, df_raw['product'].unique(), df_raw['quality'].unique())    
-        buttons=[]
+        data_line, layout_line = liner_graph_product_summary(df_raw, df_raw['product'].unique(),\
+                                                df_raw['quality'].unique())    
+        pq_selector = [
+            dbc.FormGroup([
+                dbc.Label("Selector de producto"),
+                dbc.Checklist(
+                    options=[{"label": f"Product {product}", "value": product}\
+                             for product in np.sort(df_raw['product'].unique())],                
+                    value=df_raw['product'].unique(),
+                    id="checklist-product",
+                ),
+            ]),
+            dbc.FormGroup([
+                dbc.Label("Selector de calidad"),
+                dbc.Checklist(
+                    options=[{"label": f"Product {quality}", "value": quality}\
+                             for quality in np.sort(df_raw['quality'].unique())],                
+                    value=df_raw['quality'].unique(),
+                    id="checklist-quality",
+                    switch=True,
+                ),
+            ]),
+        ]
     else:
         table = seccion_summary_table(df_raw)
-        data_bar = bar_graph_seccions_summary(df_raw)
+        data_bar, layout_bar = bar_graph_seccions_summary(df_raw)
         titulo_line_plot = 'Buenas por seccion/mes'
-        data_line = liner_graph_seccions_summary(df_raw, 'S1')
-        buttons=list([
-            dict(
-                args=[dict(y=[liner_graph_seccions_summary(df_raw, 'S1')[0]['y']])],
-                label='S1',
-                method='restyle',
-            ),
-            dict(
-                args=[dict(y=[liner_graph_seccions_summary(df_raw, 'S2')[0]['y']])],
-                label='S2',
-                method='restyle'
-            ),
-            dict(
-                args=[dict(y=[liner_graph_seccions_summary(df_raw, 'S3')[0]['y']])],
-                label='S3',
-                method='restyle',
-            ),
-        ])
+        data_line, layout_line = liner_graph_seccions_summary(df_raw, '1')
+        pq_selector = pq_selector = [
+            dbc.FormGroup([
+                dbc.Label("Selector de seccion"),
+                dbc.RadioItems(
+                    options=[{"label": f"Seccion {seccion}", "value": seccion}\
+                             for seccion in [1,2,3]],                
+                    value=1,
+                    id="checklist-seccion",
+                ),
+            ]),
+        ]
                     
-    return html.Div([ html.Br(),
+    return html.Div([
+        html.Br(),
             html.Div([
                 # html.Div(className='col-1'),
                 html.Div([
                     # html.Div(className='col-1'),
                     html.H2(f'Resumen de {tab}'),
                     dbc.Table(table, 
-                               striped=True, 
+                              striped=True, 
                                 # bordered=True, 
-                               responsive=True,
-                               hover=True,
-                               dark=True,
-                              className='table mt-5', #table-secondary
+                              responsive=True,
+                              hover=True,
+                              dark=True,
+                              className='table mt-5',
                               id=f'summary-table-{tab}')
-                ], className='col-3 ml-4'),
-                html.Div(className='col-1'),
+                ], className='col-3 ml-5'),
+                # html.Div(className='col-1'),
                 html.Div([
                     html.H4('Buenas vs. Malas', className='text-center'),
                     dcc.Graph(
                         id=f'bar-plot-{tab}',
                         figure=dict(
-                            layout=dict(
-                                plot_bgcolor=colors["graph-bg"],
-                                paper_bgcolor=colors["graph-bg"],
-                                font=dict(
-                                    color = colors['text'],
-                                    family = family_font,
-                                ),
-                            ),
                             data = data_bar,
+                            layout=layout_bar,
                         ),
                     ),
-                ], className='col-3'),
+                ], className='col-3 ml-5'),
                 html.Div(className='col-1'),
                 html.Div([
                     html.H4(titulo_line_plot, className='text-center'),
                     dcc.Graph(
                         id=f'time-plot-{tab}',
                         figure=dict(
-                            layout=dict(
-                                plot_bgcolor=colors["graph-bg"],
-                                paper_bgcolor=colors["graph-bg"],
-                                font=dict(
-                                    color = colors['text'],
-                                    family = family_font,
-                                ),
-                                updatemenus = [
-                                    dict(
-                                        type = 'buttons',
-                                        # direction = "left",
-                                        buttons=buttons,
-                                        # showactive=True,
-                                        # xanchor="left",
-                                        # yanchor="top"
-                                        direction="right",
-                                        pad={"r": 10, "t": 10},
-                                        showactive=True,
-                                        x=0.1,
-                                        xanchor="left",
-                                        y=1.1,
-                                        yanchor="top"
-                                    )
-                                ],
-                            ),
-                            data = data_line
+                            data = [data_line],
+                            layout = layout_line,
                         ),
                     ),
                 ], className='col-3'),
+                html.Div(pq_selector, className='col-1 mt-4'),
             ], className='row'),])
 
 # Devuelve el gráfico de barras de barras buenas/malas en funcion de una o varias columnas
@@ -546,8 +534,16 @@ def bar_graph_product_summary(df, column):
             color = colors['plantplot-mk-red'], 
         ),
     )
+    layout = dict(
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        xaxis={
+            "tickangle": 30,
+        },
+    )
     
-    return [trace, trace2]
+    return [trace, trace2], layout
 
 def liner_graph_product_summary(df, product, quality):
     df['month'] = df['date'].apply(lambda x: datetime(x.year, x.month, 1))
@@ -558,23 +554,31 @@ def liner_graph_product_summary(df, product, quality):
         x = todas.index,
         y = ((buenas/todas)*100).values,
     )
-    return [trace]
+    layout = dict(
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        xaxis={
+            "tickangle": 30,
+        },
+    )
+    return trace, layout
 
 # Devuelve el gráfico de barras de barras buenas/malas por seccion
 def bar_graph_seccions_summary(df):
-    secciones = ['S1', 'S2', 'S3']
+    secciones = [1 ,2, 3]
     todas = []
     buenas = []
     malas = []
     for seccion in secciones:
         todas = np.append(todas, len(df))
-        buenas = np.append(buenas, len(df[df[f'label_{seccion}']>=1]))
-        malas = np.append(malas, len(df[df[f'label_{seccion}']<1]))
+        buenas = np.append(buenas, len(df[df[f'label_S{seccion}']>=1]))
+        malas = np.append(malas, len(df[df[f'label_S{seccion}']<1]))
 
     trace = dict(
         type='bar',
         name='Buenas',
-        x = secciones,
+        x = [f'Seccion {seccion}' for seccion in secciones],
         y = ((buenas/todas)*100),
         marker = dict(
             color = colors['plantplot-mk-green'], 
@@ -583,25 +587,41 @@ def bar_graph_seccions_summary(df):
     trace2 = dict(
         type='bar',
         name='Malas',
-        x = secciones,
+        x = [f'Seccion {seccion}' for seccion in secciones],
         y = ((malas/todas)*100),
         marker = dict(
             color = colors['plantplot-mk-red'], 
         ),
     )
+    layout = dict(
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        xaxis={
+            "tickangle": 30,
+        },
+    )
     
-    return [trace, trace2]
+    return [trace, trace2], layout
 
 def liner_graph_seccions_summary(df, seccion):
     df['month'] = df['date'].apply(lambda x: datetime(x.year, x.month, 1))
     todas = df.groupby('month').count()['id']
-    buenas = df[(df[f'label_{seccion}']>0)].groupby('month').count()['id']
+    buenas = df[(df[f'label_S{seccion}']>0)].groupby('month').count()['id']
     trace = dict(
         type='line',
         x = todas.index,
         y = ((buenas/todas)*100).values,
     )
-    return [trace]
+    layout = dict(
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        xaxis={
+            "tickangle": 30,
+        },
+    )
+    return trace, layout
 
 #%%###########################################################################
 #                              03. LAYOUT                                    #
@@ -613,13 +633,15 @@ navbar = dbc.Navbar([
                 # Imagen con el logo de Dattium que nos llevara a la página principal de la App
                 # Use row and col to control vertical alignment of logo / brand
                 html.Img(src=app.get_asset_url(navbar_image),\
-                                         height="45px"),
+                                          height=navbar_logo_size),
                 href="/",
                 className='float-right col-2'
             ),
-            dbc.NavbarToggler(id="navbar-toggler"),
-            dbc.NavItem(dbc.NavLink("Home", href="/")),
-            dbc.NavItem(dbc.NavLink("Reports", href="/reports")),
+            dbc.Nav([
+                # dbc.NavbarToggler(id="navbar-toggler"),
+                dbc.NavItem(dbc.NavLink("Home", href="/")),
+                dbc.NavItem(dbc.NavLink("Reports", href="/reports")),
+            ]),
     ], className='lg', color=colors['navbar'])
     
 # Layout de la app
@@ -1294,7 +1316,7 @@ reports_page_layout = html.Div([
     Output("summary-tab-content", "children"),
     [Input("summary-tabs", "active_tab")],
 )
-def render_tab_content(active_tab):
+def render_tab_content(active_tab):    
     if active_tab == "products":
         return summary_tab_layout('products')
     elif active_tab == "seccions":
@@ -1303,7 +1325,21 @@ def render_tab_content(active_tab):
         return [summary_tab_layout('products'),
                 summary_tab_layout('seccions')]
     
+@app.callback(
+    Output("time-plot-products", "figure"),
+    [Input("checklist-product", "value"), Input("checklist-quality", "value"),]
+)
+def checklist_product_trace(ckd_product, ckd_quality):
+    trace, layout = liner_graph_product_summary(df_raw, ckd_product, ckd_quality)
+    return dict(data=[trace], layout=layout)
 
+@app.callback(
+    Output("time-plot-seccions", "figure"),
+    [Input("checklist-seccion", "value")]
+)
+def checklist_product_trace(ckd_seccion):
+    trace, layout = liner_graph_seccions_summary(df_raw, ckd_seccion)
+    return dict(data=[trace], layout=layout)
 #%%###########################################################################
 #                              07. MAIN                                      #
 ##############################################################################
