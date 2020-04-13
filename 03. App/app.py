@@ -19,6 +19,7 @@ from sqlalchemy import create_engine
 from numpy.random import randint
 from datetime import timedelta, datetime, date
 import calendar
+import time
 
 #%%###########################################################################
 #                            01. CONFIGURACIÓN                               #
@@ -67,6 +68,8 @@ if dark:
     pp_bg_red = '#653434'
     pp_mk_green = '#59C159'
     pp_mk_red = '#EC5550'
+    chm_green = '#59C159'
+    chm_red = '#EC5550'
 else:
     graph_bg = ''
     text_color = ''
@@ -74,6 +77,8 @@ else:
     pp_bg_red = '#F9E9E0'
     pp_mk_green = '#76B7B2'
     pp_mk_red = '#E15759'
+    chm_green = '#76B7B2'
+    chm_red = '#E15759'
 
 colors = {
     'navbar': 'secondary',
@@ -86,6 +91,9 @@ colors = {
     'plantplot-l-red': '#B31919', # Plantplot Line Red #E46B6B
     'plantplot-mk-green': pp_mk_green, # Plantplot Marker Green
     'plantplot-mk-red': pp_mk_red, # Plantplot Merker Red
+    'chm-green': chm_green, # Calendar HeatMap Green
+    'chm-yellow': "#FEC036", # Calendar HeatMap Yellow
+    'chm-red': chm_red, # Calendar HeatMap Red
     'histogram-act': '#FFA64D', # Histogram Actual
     'histogram-act-br': '#FF8C1A', # Histogram Actual Border
     'histogram-hist': '#4DA6FF', # Histogram Historical
@@ -127,7 +135,14 @@ def get_home_tab_layout(tab):
                 interval=int(GRAPH_INTERVAL),
                 n_intervals=0,
             )
-        bottom_seccion = html.Div()
+        bottom_seccion = html.Div([
+                dcc.Graph(
+                    id='calendar-heatmap',
+                    figure=calendar_heatmap(df_raw),
+                    className = 'col-12',
+                    style=dict(background=colors['graph-bg'])
+                ),
+            ], className='pr-4 pl-5 row w-100 py-5')
     else:
         altertab = 'real'
         titulo = 'Historico'
@@ -200,7 +215,7 @@ def get_home_tab_layout(tab):
             interval,
         ], className='h-50 pb-3'), 
         # html.Br(),
-        html.Div(bottom_seccion, id='hp-bottom-div', className='h-50 pt-3'),
+        html.Div(bottom_seccion, id='hp-bottom-div', className='h-50 pt-3 w-100'),
         # # Imagen de la planta
         # html.Div([
         #     html.Img(src=app.get_asset_url("plant-diagram.png"), \
@@ -316,6 +331,57 @@ def get_plant_plot(df):
     )
     return trace, layout
 
+# Calendar HeatMap
+def calendar_heatmap(df):
+    df['day'] = [datetime.date(date) for date in df_raw['date']]
+    
+    d1 = datetime.date(df['date'].min())
+    d2 = datetime.date(df['date'].max())
+    
+    delta = d2 - d1
+    
+    dates_in_year = [d1 + timedelta(i) for i in range(delta.days+1)] #gives me a list with datetimes for each day a year
+    weekdays_in_year = [i.weekday() for i in dates_in_year] #gives [0,1,2,3,4,5,6,0,1,2,3,4,5,6,…] (ticktext in xaxis dict translates this to weekdays
+    weeknumber_of_dates = [i.strftime("w%V %G") for i in dates_in_year] #gives [1,1,1,1,1,1,1,2,2,2,2,2,2,2,…] name is self-explanatory
+    z = df_raw.groupby('day').mean()['label'] #np.random.randint(3, size=(len(dates_in_year)))
+    text = [str(i) for i in dates_in_year] #gives something like list of strings like '2018-01-25' for each date. Used in data trace to make good hovertext.
+    
+    trace = dict(
+        type='heatmap',
+        x = weeknumber_of_dates,
+        y = weekdays_in_year,
+        z = z,
+        text=text,
+        hoverinfo="text+z",
+        xgap=3, # this
+        ygap=3, # and this is used to make the grid-like apperance
+        zmin=0,
+        zmax=6,
+        showscale=False,
+        colorscale=[(0.00, colors['chm-red']),   (0.7, colors['chm-red']),
+                    (0.7, colors['chm-yellow']), (0.9, colors['chm-yellow']),
+                    (0.9, colors['chm-green']),  (1.00, colors['chm-green'])]
+    )
+    layout = dict(
+        title='activity chart',
+        height=280,
+        yaxis=dict(
+            showline = False, showgrid = False, zeroline = False,
+            tickmode="array",
+            ticktext=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+            tickvals=[0,1,2,3,4,5,6],
+            ticks = '',
+        ),
+        xaxis=dict(
+            showline = False, showgrid = False, zeroline = False,
+            ticks = '',
+        ),
+        font={"color": colors['text'], "size": size_font, "family": family_font,},
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        margin = dict(t=40),
+    )
+    return dict(data=[trace], layout=layout)
 #%%###########################################################################
 #                     02_02. FUNCIONES (SECCION PAGE)                        #
 ##############################################################################
@@ -931,7 +997,7 @@ def change_page(click_data, click_data_hist):
                 fal_s2 = get_cards_layout(col_fal_s2, False)
     return [{'des_s1': (des_s1), 'fal_s1': (fal_s1), 'des_s2': (des_s2), 'fal_s2': (fal_s2)}, '/seccions', {'id': point_id}]
 
-
+    
 #%%###########################################################################
 #                           05_1. SECCIONS-PAGE                              #
 ##############################################################################
