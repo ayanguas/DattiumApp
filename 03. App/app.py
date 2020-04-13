@@ -18,6 +18,8 @@ import dash_auth
 from sqlalchemy import create_engine
 from numpy.random import randint
 from datetime import timedelta, datetime, date
+import calendar
+import time
 
 #%%###########################################################################
 #                            01. CONFIGURACIÓN                               #
@@ -66,6 +68,8 @@ if dark:
     pp_bg_red = '#653434'
     pp_mk_green = '#59C159'
     pp_mk_red = '#EC5550'
+    chm_green = '#59C159'
+    chm_red = '#EC5550'
 else:
     graph_bg = ''
     text_color = ''
@@ -73,6 +77,8 @@ else:
     pp_bg_red = '#F9E9E0'
     pp_mk_green = '#76B7B2'
     pp_mk_red = '#E15759'
+    chm_green = '#76B7B2'
+    chm_red = '#E15759'
 
 colors = {
     'navbar': 'secondary',
@@ -85,26 +91,299 @@ colors = {
     'plantplot-l-red': '#B31919', # Plantplot Line Red #E46B6B
     'plantplot-mk-green': pp_mk_green, # Plantplot Marker Green
     'plantplot-mk-red': pp_mk_red, # Plantplot Merker Red
+    'chm-green': chm_green, # Calendar HeatMap Green
+    'chm-yellow': "#FEC036", # Calendar HeatMap Yellow
+    'chm-red': chm_red, # Calendar HeatMap Red
     'histogram-act': '#FFA64D', # Histogram Actual
     'histogram-act-br': '#FF8C1A', # Histogram Actual Border
     'histogram-hist': '#4DA6FF', # Histogram Historical
     'histogram-hist-br': '#1A8CFF', # Histogram Historical Border
     'grid': '#636363', 
-    'signal-line': '#FEC036',# Linea del gráfico de la señal
+    'signal-line': '#FEC036', # Linea amarilla del gráfico de la señal
     'signal-marker': '#B31919',
+    'stacked-bar-yellow': '#FEC036',
 }
 
 # Parametros de configuración del texto de los gráficos
 family_font = 'Arial, sans-serif' # Graph Text Font
-size_font = 22 # Graph Text Size
+size_font = 18 # Graph Text Size
 size_font_summary = 18 # Summary Graph Text Size
 size_font_cards = 18 # Font Text Size
-pp_size = '500px' # Plant plot graph size
+pp_size = '10%' # Plant plot graph size
 summary_graph_size = '400px' # Summary graphs size
 navbar_logo_size = "40px" # Navbar logo size
 
 #%%###########################################################################
-#                             02. FUNCIONES                                  #
+#                       02_01. FUNCIONES (HOME PAGE)                         #
+##############################################################################
+
+def get_home_tab_layout(tab):
+    if tab == 'real':
+        altertab = 'hist'
+        titulo = 'Tiempo Real'
+        filters = html.Div([
+            html.Br(),
+            html.Div([
+                html.Div(className='col-11'),
+                dbc.Button("Pause", className='ml-auto', id="pause-button"),
+                # html.Div(className='col-1'),
+            ], className='row w-100 px-5'), 
+        ])
+        # Interval, sirve para ir actualizando el gráfico cada GRAPH_INTERVAL ms
+        interval = dcc.Interval(
+                id="signal-update",
+                interval=int(GRAPH_INTERVAL),
+                n_intervals=0,
+            )
+        bottom_seccion = html.Div([
+                dcc.Graph(
+                    id='calendar-heatmap',
+                    figure=calendar_heatmap(df_raw),
+                    className = 'col-12',
+                    style=dict(background=colors['graph-bg'])
+                ),
+            ], className='pr-4 pl-5 row w-100 py-5')
+    else:
+        altertab = 'real'
+        titulo = 'Historico'
+        filters = html.Div([
+            # html.Div(className='col-1'),
+            # html.H4('Filtros'),
+            # html.Br(),
+            html.Div([
+                html.H5('Fecha de inicio'),
+                html.Div([
+                    dcc.DatePickerSingle(date=date(2017, 3, 1), display_format='DD-MM-YYYY', \
+                                         className='col-4 rounded-lg', id='date-min'),
+                    dcc.Input(type='number', min=0, max=23, value=0, className='col-2 rounded-lg', id='hour-min'),
+                    html.Div([
+                        html.P(':'),
+                    ], className='col-1', style={'fontSize': 22}),
+                    dcc.Input(type='number', min=0, max=59, value=0, className='col-2 rounded-lg', id='min-min'),
+                ], className='row'),
+            ], className='col-3'),
+            # html.Br(),
+            # html.Div(className='col-1'),º
+            html.Div([
+                html.H5('Fecha final'),
+                html.Div([
+                    dcc.DatePickerSingle(date=date(2017, 3, 20), display_format='DD-MM-YYYY', \
+                                         className='col-4 rounded-lg', id='date-max'),
+                    dcc.Input(type='number', min=0, max=23, value=0, className='col-2 rounded-lg', id='hour-max'),
+                    html.Div([
+                        html.P(':'),
+                    ], className='col-1', style={'fontSize': 22}),
+                    dcc.Input(type='number', min=0, max=59, value=0, className='col-2 rounded-lg', id='min-max'),
+                ], className='row'),
+            ], className='col-3'),
+        ], className="row w-100 px-5")
+        interval  = html.Div()
+        bottom_seccion = reports_page_layout1
+    # Content
+    content = html.Div([
+        # PLot of general view of plant
+        html.Div([
+            # Titulo del gráfico
+            # html.H1(
+            #     id=f'header-plant-plot-{tab}',
+            #     children=titulo,
+            #     style={
+            #         'textAlign': 'center',
+            #         'color': colors['text'],
+            #         'padding-top': '30px'
+            #         },
+            #     className='h-25'
+            # ),
+            html.Div(filters, className='pt-3 pb-1 h-25'),
+            # Gráfico y filtros
+            html.Div([
+                # html.Div(className='col-1'), #, style=dict(height=pp_size)
+                # Gráfico general del comportamiento de la planta
+                dcc.Graph(
+                    id=f'plant-plot-{tab}',
+                    figure=dict(
+                        layout=dict(
+                            plot_bgcolor=colors["graph-bg"],
+                            paper_bgcolor=colors["graph-bg"],
+                        )
+                    ),
+                    className = 'col-12',
+                    style=dict(background=colors['graph-bg'])
+                ),
+            ], className='row h-75 w-100 pr-4 pl-5 pt-2'),
+            html.Div([dcc.Graph(id=f'plant-plot-{altertab}')],className='invisible h-25'),
+            interval,
+        ], className='h-50 pb-3'), 
+        # html.Br(),
+        html.Div(bottom_seccion, id='hp-bottom-div', className='h-50 pt-3 w-100'),
+        # # Imagen de la planta
+        # html.Div([
+        #     html.Img(src=app.get_asset_url("plant-diagram.png"), \
+        #               className='img-fluid mx-auto d-inline-block',\
+        #               style={'max-height': '100%'})
+        # ], className = 'row h-50 mt-5 pt-5'),
+    ], className='h-100 w-100')   
+    return content
+
+# Función que devuelve el trace y layout de plant-plot
+def get_plant_plot(df):
+    
+    column = 'label'
+    datemin1 = df['date'].min() - timedelta(hours=2)
+    datemax1 = df['date'].max() + timedelta(hours=2)
+    
+    # Scatter plot con del label de comportamiento de la planta
+    trace = dict(
+        type="scatter",
+        ids=df['id'],
+        x=df['date'],
+        y=df[column],
+        line={"color": "dimgray"},
+        hoverinfo='text',
+        # Texto que se muestra al pasar el cursor por encima de un punto
+        hovertext = ['<b>Id</b>: {}<br><b>All</b>: {}<br><b>S1</b>: {}<br><b>S2</b>: {}<br><b>S3</b>: {}'.format(row['id'],row['label'], row['label_S1'], row['label_S2'], row['label_S3']) \
+                     for index, row in df.iterrows()],
+        # error_y={
+        #     "type": "data",
+        #     "array": df["SpeedError"],
+        #     "thickness": 1.5,
+        #     "width": 2,
+        #     "color": "#B4E8FC",
+        # },
+        mode="markers",
+        name='Label',
+        marker=dict(
+            color=[colors['plantplot-mk-green'] if x > 3 else colors['plantplot-mk-red'] for x in df['label']],
+            # size=10,
+        ),
+    )
+        
+    # Opciones de estilo del gráfico
+    layout = dict(
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        font={"color": colors['text'], "size": size_font, "family": family_font,},
+        margin={"t":30, "r": 15, "l":15},
+        # height=500,
+        xaxis={
+            "range": [datemin1, datemax1],
+            "showline": False,
+            "zeroline": False,
+            "fixedrange": True,
+            # "tickvals": [0, 25, 50, 75, 100],
+            # "ticktext": ["100", "75", "50", "25", "0"],
+            "title": "Time Elapsed (hours)",
+            "ylabel": column,
+            # "automargin": True,
+        },
+        yaxis={
+            "range": [
+                0,
+                6.5
+            ],
+            "tickvals": [2,4,6],
+            "showgrid": False,
+            "showline": False,
+            "fixedrange": True,
+            "zeroline": False,
+            "gridcolor": colors["grid"],
+            "nticks": 7,
+            "automargin": True,
+        },
+        shapes=[
+            # Rectangulo de color verde para estilizar el scatter
+            dict(
+                type='rect', 
+                x0=datemin1, 
+                x1=datemax1, 
+                y0=4, 
+                y1=6.5, 
+                fillcolor=colors['plantplot-bg-green'], 
+                layer='below',
+                linewidth=0,
+            ),
+            # Rectangulo de color rojo para estilizar el scatter
+            dict(
+                type='rect', 
+                x0=datemin1, 
+                x1=datemax1, 
+                y0=0, 
+                y1=4, 
+                fillcolor=colors['plantplot-bg-red'], 
+                layer='below',
+                linewidth=0,
+            ),
+            # Linea de color rojo para estilizar el scatter
+            dict(
+                type="line",
+                x0=datemin1,
+                y0=4,
+                x1=datemax1,
+                y1=4,
+                line=dict(
+                    color=colors['plantplot-l-red'],
+                    width=4,
+            
+                ),
+                layer='below'
+            )
+        ],
+    )
+    return trace, layout
+
+# Calendar HeatMap
+def calendar_heatmap(df):
+    df['day'] = [datetime.date(date) for date in df_raw['date']]
+    
+    d1 = datetime.date(df['date'].min())
+    d2 = datetime.date(df['date'].max())
+    
+    delta = d2 - d1
+    
+    dates_in_year = [d1 + timedelta(i) for i in range(delta.days+1)] #gives me a list with datetimes for each day a year
+    weekdays_in_year = [i.weekday() for i in dates_in_year] #gives [0,1,2,3,4,5,6,0,1,2,3,4,5,6,…] (ticktext in xaxis dict translates this to weekdays
+    weeknumber_of_dates = [i.strftime("w%V %G") for i in dates_in_year] #gives [1,1,1,1,1,1,1,2,2,2,2,2,2,2,…] name is self-explanatory
+    z = df_raw.groupby('day').mean()['label'] #np.random.randint(3, size=(len(dates_in_year)))
+    text = [str(i) for i in dates_in_year] #gives something like list of strings like '2018-01-25' for each date. Used in data trace to make good hovertext.
+    
+    trace = dict(
+        type='heatmap',
+        x = weeknumber_of_dates,
+        y = weekdays_in_year,
+        z = z,
+        text=text,
+        hoverinfo="text+z",
+        xgap=3, # this
+        ygap=3, # and this is used to make the grid-like apperance
+        zmin=0,
+        zmax=6,
+        showscale=False,
+        colorscale=[(0.00, colors['chm-red']),   (0.7, colors['chm-red']),
+                    (0.7, colors['chm-yellow']), (0.9, colors['chm-yellow']),
+                    (0.9, colors['chm-green']),  (1.00, colors['chm-green'])]
+    )
+    layout = dict(
+        title='activity chart',
+        height=280,
+        yaxis=dict(
+            showline = False, showgrid = False, zeroline = False,
+            tickmode="array",
+            ticktext=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+            tickvals=[0,1,2,3,4,5,6],
+            ticks = '',
+        ),
+        xaxis=dict(
+            showline = False, showgrid = False, zeroline = False,
+            ticks = '',
+        ),
+        font={"color": colors['text'], "size": size_font, "family": family_font,},
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        margin = dict(t=40),
+    )
+    return dict(data=[trace], layout=layout)
+#%%###########################################################################
+#                     02_02. FUNCIONES (SECCION PAGE)                        #
 ##############################################################################
 
 # Funcion que nos devuelve (aleatoriamente) las columnas que se desvian o tienen algun fallo
@@ -157,111 +436,6 @@ def get_card_info_layout(id_data, column):
                             **Date**: -   
                             **-**: -  ''', style={"color": colors['text'], "font-size": size_font_cards, "font-family": family_font,})              
     return text
-
-# Función que devuelve el trace y layout de plant-plot
-def get_plant_plot(df):
-    
-    column = 'label'
-    datemin1 = df['date'].min() - timedelta(hours=2)
-    datemax1 = df['date'].max() + timedelta(hours=2)
-    
-    # Scatter plot con del label de comportamiento de la planta
-    trace = dict(
-        type="scatter",
-        ids=df['id'],
-        x=df['date'],
-        y=df[column],
-        line={"color": "dimgray"},
-        hoverinfo='text',
-        # Texto que se muestra al pasar el cursor por encima de un punto
-        hovertext = ['<b>Id</b>: {}<br><b>All</b>: {}<br><b>S1</b>: {}<br><b>S2</b>: {}<br><b>S3</b>: {}'.format(row['id'],row['label'], row['label_S1'], row['label_S2'], row['label_S3']) \
-                     for index, row in df.iterrows()],
-        # error_y={
-        #     "type": "data",
-        #     "array": df["SpeedError"],
-        #     "thickness": 1.5,
-        #     "width": 2,
-        #     "color": "#B4E8FC",
-        # },
-        mode="markers",
-        name='Label',
-        marker=dict(
-            color=[colors['plantplot-mk-green'] if x > 3 else colors['plantplot-mk-red'] for x in df['label']],
-            size=10,
-        ),
-    )
-        
-    # Opciones de estilo del gráfico
-    layout = dict(
-        plot_bgcolor=colors["graph-bg"],
-        paper_bgcolor=colors["graph-bg"],
-        font={"color": colors['text'], "size": size_font, "family": family_font,},
-        height=500,
-        xaxis={
-            "range": [datemin1, datemax1],
-            "showline": False,
-            "zeroline": False,
-            "fixedrange": True,
-            # "tickvals": [0, 25, 50, 75, 100],
-            # "ticktext": ["100", "75", "50", "25", "0"],
-            "title": "Time Elapsed (hours)",
-            "ylabel": column,
-            "automargin": True,
-        },
-        yaxis={
-            "range": [
-                0,# df[column].min() - 0.1*(df[column].max() - df[column].min()), #min(200, min(df[column])),
-                6.5# df[column].max() + 0.1*(df[column].max() - df[column].min()), #max(700, max(df[column])),
-            ],
-            "tickvals": [1,2,3,4,5,6],
-            "showgrid": False,
-            "showline": False,
-            "fixedrange": True,
-            "zeroline": False,
-            "gridcolor": colors["grid"],
-            "nticks": 7, #max(50, round(df[column].iloc[-1] / 10)),
-            "automargin": True,
-        },
-        shapes=[
-            # Rectangulo de color verde para estilizar el scatter
-            dict(
-                type='rect', 
-                x0=datemin1, 
-                x1=datemax1, 
-                y0=4, 
-                y1=6.5, 
-                fillcolor=colors['plantplot-bg-green'], 
-                layer='below',
-                linewidth=0,
-            ),
-            # Rectangulo de color rojo para estilizar el scatter
-            dict(
-                type='rect', 
-                x0=datemin1, 
-                x1=datemax1, 
-                y0=0, 
-                y1=4, 
-                fillcolor=colors['plantplot-bg-red'], 
-                layer='below',
-                linewidth=0,
-            ),
-            # Linea de color rojo para estilizar el scatter
-            dict(
-                type="line",
-                x0=datemin1,
-                y0=4,
-                x1=datemax1,
-                y1=4,
-                line=dict(
-                    color=colors['plantplot-l-red'],
-                    width=4,
-            
-                ),
-                layer='below'
-            )
-        ],
-    )
-    return trace, layout
 
 # Función que devuelve el trace y layout del gráfico de la señal
 def get_signal_plot(df, column, id_data):
@@ -379,6 +553,10 @@ def get_histogram(df, column, id_data):
     )
     return trace, trace2, layout
 
+#%%###########################################################################
+#                      02_03. FUNCIONES (SUMMARY PAGE)                       #
+##############################################################################
+
 # Devuelve una tabla en HTML a partir de un DF
 def make_table(df):
     """ Return a dash definition of an HTML table for a Pandas dataframe """
@@ -425,40 +603,40 @@ def seccion_summary_table(df):
     seccion_table = make_table(df_table)
     return seccion_table
 # Devuelve el layout de los tabs de reports
-def summary_tab_layout(tab):
+def summary_tab_layout(tab, df):
     if tab == 'products':
-        table = product_summary_table(df_raw)
-        data_bar, layout_bar = bar_graph_product_summary(df_raw, 'product')
+        table = product_summary_table(df)
+        data_bar, layout_bar = bar_graph_product_summary(df, 'product')
         titulo_line_plot = 'Buenas por producto/calidad/mes'
-        data_line, layout_line = liner_graph_product_summary(df_raw, df_raw['product'].unique(),\
-                                                df_raw['quality'].unique())    
+        data_line, layout_line = liner_graph_product_summary(df, df['product'].unique(),\
+                                                df['quality'].unique())    
         pq_selector = [
             dbc.FormGroup([
                 dbc.Label("Selector de producto"),
                 dbc.Checklist(
                     options=[{"label": f"Product {product}", "value": product}\
-                             for product in np.sort(df_raw['product'].unique())],                
-                    value=df_raw['product'].unique(),
+                             for product in np.sort(df['product'].unique())],                
+                    value=df['product'].unique(),
                     id="checklist-product",
                 ),
             ]),
             dbc.FormGroup([
                 dbc.Label("Selector de calidad"),
                 dbc.Checklist(
-                    options=[{"label": f"Product {quality}", "value": quality}\
-                             for quality in np.sort(df_raw['quality'].unique())],                
-                    value=df_raw['quality'].unique(),
+                    options=[{"label": f"Calidad {quality}", "value": quality}\
+                             for quality in np.sort(df['quality'].unique())],                
+                    value=df['quality'].unique(),
                     id="checklist-quality",
                     switch=True,
                 ),
             ]),
         ]
     else:
-        table = seccion_summary_table(df_raw)
-        data_bar, layout_bar = bar_graph_seccions_summary(df_raw)
+        table = seccion_summary_table(df)
+        data_bar, layout_bar = bar_graph_seccions_summary(df)
         titulo_line_plot = 'Buenas por seccion/mes'
-        data_line, layout_line = liner_graph_seccions_summary(df_raw, '1')
-        pq_selector = pq_selector = [
+        data_line, layout_line = liner_graph_seccions_summary(df, '1')
+        pq_selector = [
             dbc.FormGroup([
                 dbc.Label("Selector de seccion"),
                 dbc.RadioItems(
@@ -471,45 +649,56 @@ def summary_tab_layout(tab):
         ]
                     
     return html.Div([
-        html.Br(),
+        # html.Br(),
+        html.H2(f'Resumen de {tab}', className='px-5', style={"height": '10%'}),
+        # html.Br(),
+        html.Div([
+            # html.Div(className='col-1'),
             html.Div([
                 # html.Div(className='col-1'),
-                html.Div([
-                    # html.Div(className='col-1'),
-                    html.H2(f'Resumen de {tab}'),
-                    dbc.Table(table, 
-                              striped=True, 
-                                # bordered=True, 
-                              responsive=True,
-                              hover=True,
-                              dark=True,
-                              className='table mt-5',
-                              id=f'summary-table-{tab}')
-                ], className='col-3 ml-5'),
-                # html.Div(className='col-1'),
-                html.Div([
-                    html.H4('Buenas vs. Malas', className='text-center'),
-                    dcc.Graph(
-                        id=f'bar-plot-{tab}',
-                        figure=dict(
-                            data = data_bar,
-                            layout=layout_bar,
-                        ),
+                html.H4(f'Detalles de {tab}', className='invisible', style={"height": '10%'}),
+                dbc.Table(table, 
+                          striped=True, 
+                            # bordered=True, 
+                          responsive=True,
+                          hover=True,
+                          dark=True,
+                          className='table pt-2',
+                          style={"height": '90%'},
+                          id=f'summary-table-{tab}')
+            ], className='col-3 px-5 h-75'),
+            # html.Div(className='col-1'),
+            html.Div([
+                html.H4('Buenas vs. Malas', className='text-center', style={"height": '10%'}),
+                dcc.Graph(
+                    id=f'bar-plot-{tab}',
+                    figure=dict(
+                        data = data_bar,
+                        layout=layout_bar,
                     ),
-                ], className='col-3 ml-5'),
-                html.Div(className='col-1'),
-                html.Div([
-                    html.H4(titulo_line_plot, className='text-center'),
-                    dcc.Graph(
-                        id=f'time-plot-{tab}',
-                        figure=dict(
-                            data = [data_line],
-                            layout = layout_line,
-                        ),
+                    style={"height": '90%'},
+                ),
+            ], className='col-4 px-5 h-100'),
+            # html.Div(className='col-1 h-100'),
+            html.Div([
+                html.H4(titulo_line_plot, className='text-center', style={"height": '10%'}),
+                dcc.Graph(
+                    id=f'time-plot-{tab}',
+                    figure=dict(
+                        data = [data_line],
+                        layout = layout_line,
                     ),
-                ], className='col-3'),
-                html.Div(pq_selector, className='col-1 mt-4'),
-            ], className='row'),])
+                    style={"height": '90%'},
+                ),
+            ], className='col-4 pl-5 pr-2'),
+            html.Div(pq_selector
+                # html.Div(
+                #     pq_selector,
+                #     className='col-11'),
+                # html.Div([
+                # ], className='col-1'),
+            ,className='col-1 pt-4 h-100'),
+        ], className='row py-3 w-100', style={"height": '90%'})], className='h-100 py-3')
 
 # Devuelve el gráfico de barras de barras buenas/malas en funcion de una o varias columnas
 def bar_graph_product_summary(df, column):
@@ -538,6 +727,7 @@ def bar_graph_product_summary(df, column):
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        margin={"t":30},
         xaxis={
             "tickangle": 30,
         },
@@ -546,7 +736,7 @@ def bar_graph_product_summary(df, column):
     return [trace, trace2], layout
 
 def liner_graph_product_summary(df, product, quality):
-    df['month'] = df['date'].apply(lambda x: datetime(x.year, x.month, 1))
+    df['month'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
     todas = df[(df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('month').count()['id']
     buenas = df[(df['label']>=4) & (df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('month').count()['id']
     trace = dict(
@@ -558,6 +748,7 @@ def liner_graph_product_summary(df, product, quality):
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        margin={"t":30},
         xaxis={
             "tickangle": 30,
         },
@@ -570,10 +761,12 @@ def bar_graph_seccions_summary(df):
     todas = []
     buenas = []
     malas = []
+    desviadas = []
     for seccion in secciones:
         todas = np.append(todas, len(df))
-        buenas = np.append(buenas, len(df[df[f'label_S{seccion}']>=1]))
-        malas = np.append(malas, len(df[df[f'label_S{seccion}']<1]))
+        buenas = np.append(buenas, len(df[df[f'label_S{seccion}']==2]))
+        desviadas = np.append(desviadas, len(df[df[f'label_S{seccion}']==1]))
+        malas = np.append(malas, len(df[df[f'label_S{seccion}']==0]))
 
     trace = dict(
         type='bar',
@@ -586,26 +779,37 @@ def bar_graph_seccions_summary(df):
     )
     trace2 = dict(
         type='bar',
-        name='Malas',
+        name='Anomalías',
         x = [f'Seccion {seccion}' for seccion in secciones],
         y = ((malas/todas)*100),
         marker = dict(
             color = colors['plantplot-mk-red'], 
         ),
     )
+    trace3 = dict(
+        type='bar',
+        name='Desviaciones',
+        x = [f'Seccion {seccion}' for seccion in secciones],
+        y = ((desviadas/todas)*100),
+        marker = dict(
+            color = colors['stacked-bar-yellow'], 
+        ),
+    )
     layout = dict(
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        margin={"t":30},
         xaxis={
             "tickangle": 30,
         },
+        barmode='stack',
     )
     
-    return [trace, trace2], layout
+    return [trace, trace3, trace2], layout
 
 def liner_graph_seccions_summary(df, seccion):
-    df['month'] = df['date'].apply(lambda x: datetime(x.year, x.month, 1))
+    df['month'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
     todas = df.groupby('month').count()['id']
     buenas = df[(df[f'label_S{seccion}']>0)].groupby('month').count()['id']
     trace = dict(
@@ -617,11 +821,21 @@ def liner_graph_seccions_summary(df, seccion):
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        margin={"t":30},
         xaxis={
             "tickangle": 30,
         },
     )
     return trace, layout
+
+reports_page_layout1 = html.Div([
+        dbc.Tabs([
+            dbc.Tab(label='Resumen por producto', tab_id='products'), 
+            dbc.Tab(label='Resumen por seccion', tab_id='seccions'),
+            dbc.Tab(label='Resumen', tab_id='all'),
+        ], id='summary-tabs', active_tab='products'),
+        html.Div(id='summary-tab-content', className='h-100')
+    ], className='h-100') 
 
 #%%###########################################################################
 #                              03. LAYOUT                                    #
@@ -639,10 +853,10 @@ navbar = dbc.Navbar([
             ),
             dbc.Nav([
                 # dbc.NavbarToggler(id="navbar-toggler"),
-                dbc.NavItem(dbc.NavLink("Home", href="/")),
-                dbc.NavItem(dbc.NavLink("Reports", href="/reports")),
+                dbc.NavItem(dbc.NavLink("Home", href="/", style={"color":colors['text']})),
+                dbc.NavItem(dbc.NavLink("Reports", href="/reports", style={"color":colors['text']})),
             ]),
-    ], className='lg', color=colors['navbar'])
+    ], className='lg', color=colors['navbar'], style={"height": '5vh'})
     
 # Layout de la app
 app.layout = html.Div([
@@ -653,8 +867,8 @@ app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     navbar,
     # Contenido de las paginas
-    html.Div(id='page-content')
-])
+    html.Div(id='page-content', className='w-100', style={"height": '90vh'})
+], className='min-vh-100 vh-100 w-100')
 
 # Update the index
 @app.callback(Output('page-content', 'children'),
@@ -675,138 +889,27 @@ def display_page(pathname):
     
 # Pagina 1, imagen de la planta y un gráfico general con el comportamiento de esta
 home_page_layout = html.Div([
-    # Barra de navegación de la aplicación
-    # navbar,
     dbc.Tabs([
-        dbc.Tab([
-            # Content
-            html.Div([
-                # PLot of general view of plant
-                html.Div([
-                    # Titulo del gráfico
-                    html.H1(
-                        id='header-plant-plot-real',
-                        children='Tiempo Real',
-                        style={
-                            'textAlign': 'center',
-                            'color': colors['text'],
-                            'margin-top': '30px'
-                            },
-                    ),
-                    html.Br(),
-                    html.Div([
-                        html.Div(className='col-10'),
-                        dbc.Button("Pause", className='ml-auto', id="pause-button"),
-                        html.Div(className='col-1'),
-                    ], className='row'),
-                    html.Br(),
-                    # Gráfico y filtros
-                    html.Div([
-                        html.Div(className='col-1', style=dict(height=pp_size)),
-                        # Gráfico general del comportamiento de la planta
-                        dcc.Graph(
-                            id="plant-plot-real",
-                            figure=dict(
-                                layout=dict(
-                                    plot_bgcolor=colors["graph-bg"],
-                                    paper_bgcolor=colors["graph-bg"],
-                                )
-                            ),
-                            className = 'col-10',
-                            style=dict(background=colors['graph-bg'])
-                        ),
-                    ], className='row'),
-                    # Interval, sirve para ir actualizando el gráfico cada GRAPH_INTERVAL ms
-                    dcc.Interval(
-                        id="signal-update",
-                        interval=int(GRAPH_INTERVAL),
-                        n_intervals=0,
-                    ), 
-                ]), 
-            ]),
-            html.Br(),
-            # Imagen de la planta
-            html.Div([
-                html.Img(src=app.get_asset_url("plant-diagram.png"), className='mx-auto d-block')
-            ], className = 'row'),
-        ], label='Tiempo Real'),
-        dbc.Tab([
-            # Content
-            html.Div([
-                # PLot of general view of plant
-                html.Div([
-                    # Titulo del gráfico
-                    html.H1(
-                        id='header-plant-plot-hist',
-                        children='Historico',
-                        style={
-                            'textAlign': 'center',
-                            'color': colors['text'],
-                            'margin-top': '30px'
-                            },
-                    ),
-                    html.Br(),
-                    # Filters
-                    html.Div([
-                        html.Div(className='col-1'),
-                        # html.H4('Filtros'),
-                        # html.Br(),
-                        html.Div([
-                            html.H5('Fecha de inicio'),
-                            html.Div([
-                                dcc.DatePickerSingle(date=date(2017, 3, 1), display_format='DD-MM-YYYY', \
-                                                     className='col-4', id='date-min'),
-                                dcc.Input(type='number', min=0, max=23, value=0, className='col-2', id='hour-min'),
-                                html.Div([
-                                    html.P(':'),
-                                ], className='col-1', style={'fontSize': 22}),
-                                dcc.Input(type='number', min=0, max=59, value=0, className='col-2', id='min-min'),
-                            ], className='row'),
-                        ], className='col-3'),
-                        # html.Br(),
-                        # html.Div(className='col-1'),º
-                        html.Div([
-                            html.H5('Fecha final'),
-                            html.Div([
-                                dcc.DatePickerSingle(date=date(2017, 3, 20), display_format='DD-MM-YYYY', \
-                                                     className='col-4', id='date-max'),
-                                dcc.Input(type='number', min=0, max=23, value=0, className='col-2', id='hour-max'),
-                                html.Div([
-                                    html.P(':'),
-                                ], className='col-1', style={'fontSize': 22}),
-                                dcc.Input(type='number', min=0, max=59, value=0, className='col-2', id='min-max'),
-                            ], className='row'),
-                        ], className='col-3'),
-                    ], className="row"),
-                    # Gráfico y filtros
-                    html.Div([
-                        html.Div(className='col-1', style=dict(height=pp_size)),
-                        # Gráfico general del comportamiento de la planta
-                        dcc.Graph(
-                            id="plant-plot-hist",
-                            figure=dict(
-                                layout=dict(
-                                    plot_bgcolor=colors["graph-bg"],
-                                    paper_bgcolor=colors["graph-bg"],
-                                ),
-                            ),
-                            className = 'col-10',
-                        ), 
-                    ], className='row'),
-                ]), 
-            ]),
-            html.Br(),
-            # Imagen de la planta
-            html.Div([
-                html.Img(src=app.get_asset_url("plant-diagram.png"), className='mx-auto d-block')
-            ], className = 'row'),
-        ], label='Historico'),
-    ], className = ''),   
-])
+        dbc.Tab(label='Tiempo Real', tab_id='real'),
+        dbc.Tab(label='Historico', tab_id='hist'),
+    ], id='home-page-tabs', style={"height": "4vh"}), 
+    html.Div(id='home-page-content', style={"height": "86vh"})
+], className='h-100')
 
 #%%###########################################################################
 #                         04_2. HOME-PAGE CALLBACKS                          #
 ##############################################################################
+
+# Callback que modifica el contenido de la página en función del Tab activo.
+@app.callback(
+    Output("home-page-content", "children"),
+    [Input("home-page-tabs", "active_tab")],
+)
+def render_tab_content(active_tab):    
+    if active_tab == "real":
+        return get_home_tab_layout('real')
+    elif active_tab == "hist":
+        return get_home_tab_layout('hist')
 
 # Callback que pausa la actualización automática del gráfico
 @app.callback(
@@ -894,7 +997,7 @@ def change_page(click_data, click_data_hist):
                 fal_s2 = get_cards_layout(col_fal_s2, False)
     return [{'des_s1': (des_s1), 'fal_s1': (fal_s1), 'des_s2': (des_s2), 'fal_s2': (fal_s2)}, '/seccions', {'id': point_id}]
 
-
+    
 #%%###########################################################################
 #                           05_1. SECCIONS-PAGE                              #
 ##############################################################################
@@ -1296,16 +1399,42 @@ def gen_signal_s2(column, id_data):
 #%%###########################################################################
 #                           06_1. REPORTS-PAGE                               #
 ##############################################################################
-
+filters = html.Div([
+    # html.Div(className='col-1'),
+    # html.H4('Filtros'),
+    # html.Br(),
+    html.Div([
+        html.H5('Fecha de inicio'),
+        html.Div([
+            dcc.DatePickerSingle(date=date(2016, 3, 1), display_format='DD-MM-YYYY', \
+                                 className='col-4 rounded-lg', id='date-min'),
+            dcc.Input(type='number', min=0, max=23, value=0, className='col-2 rounded-lg', id='hour-min'),
+            html.Div([
+                html.P(':'),
+            ], className='col-1', style={'fontSize': 22}),
+            dcc.Input(type='number', min=0, max=59, value=0, className='col-2 rounded-lg', id='min-min'),
+        ], className='row'),
+    ], className='col-3'),
+    # html.Br(),
+    # html.Div(className='col-1'),º
+    html.Div([
+        html.H5('Fecha final'),
+        html.Div([
+            dcc.DatePickerSingle(date=date(2020, 3, 20), display_format='DD-MM-YYYY', \
+                                 className='col-4 rounded-lg', id='date-max'),
+            dcc.Input(type='number', min=0, max=23, value=0, className='col-2 rounded-lg', id='hour-max'),
+            html.Div([
+                html.P(':'),
+            ], className='col-1', style={'fontSize': 22}),
+            dcc.Input(type='number', min=0, max=59, value=0, className='col-2 rounded-lg', id='min-max'),
+        ], className='row'),
+    ], className='col-3'),
+], className="row w-100 px-5 invisible", style={"height": "0px"})
 # Página con los informes por seccion y producto
 reports_page_layout = html.Div([
-    dbc.Tabs([
-        dbc.Tab(label='Resumen por producto', tab_id='products'), 
-        dbc.Tab(label='Resumen por seccion', tab_id='seccions'),
-        dbc.Tab(label='Resumen', tab_id='all'),
-    ], id='summary-tabs', active_tab='products'),
-    html.Div(id='summary-tab-content')
-])
+    filters,
+    reports_page_layout1,
+    ], className='h-100') 
 
 #%%###########################################################################
 #                      06_2. REPORTS-PAGE CALLBACKS                          #
@@ -1314,16 +1443,24 @@ reports_page_layout = html.Div([
 # Callback que modifica el contenido de la página en función del Tab activo.
 @app.callback(
     Output("summary-tab-content", "children"),
-    [Input("summary-tabs", "active_tab")],
+    [Input("summary-tabs", "active_tab"), \
+     Input("date-min", "date"), Input("date-max", "date"), Input('hour-min', 'value'),\
+     Input('hour-max', 'value'), Input('min-min', 'value'), Input('min-max', 'value')],
 )
-def render_tab_content(active_tab):    
+def render_tab_content(active_tab, datemin, datemax, hourmin, hourmax, minmin, minmax):  
+    
+    datemin = "'" + datemin + " " + str(hourmin).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
+    datemax = "'" + datemax + " " + str(hourmax).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
+    # Consulta a postgreSQL que devuelve
+    df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)  
+    
     if active_tab == "products":
-        return summary_tab_layout('products')
+        return summary_tab_layout('products', df)
     elif active_tab == "seccions":
-        return summary_tab_layout('seccions')
+        return summary_tab_layout('seccions', df)
     else: 
-        return [summary_tab_layout('products'),
-                summary_tab_layout('seccions')]
+        return [summary_tab_layout('products', df),
+                summary_tab_layout('seccions', df)]
     
 @app.callback(
     Output("time-plot-products", "figure"),
