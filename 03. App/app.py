@@ -135,14 +135,8 @@ def get_home_tab_layout(tab):
                 interval=int(GRAPH_INTERVAL),
                 n_intervals=0,
             )
-        bottom_seccion = html.Div([
-                dcc.Graph(
-                    id='calendar-heatmap',
-                    figure=calendar_heatmap(df_raw),
-                    className = 'col-12',
-                    style=dict(background=colors['graph-bg'])
-                ),
-            ], className='pr-4 pl-5 row w-100 py-5')
+        bottom_seccion = calendar_heatmap_layout
+        
     else:
         altertab = 'real'
         titulo = 'Historico'
@@ -332,7 +326,20 @@ def get_plant_plot(df):
     return trace, layout
 
 # Calendar HeatMap
-def calendar_heatmap(df):
+def calendar_heatmap(df, seccion):
+    if seccion == 'S1':
+        label = '_S1'
+        z_min = 0
+        z_max = 2
+    elif seccion == 'S2':
+        label = '_S2'
+        z_min = 0
+        z_max = 2
+    else:
+        label = ''
+        z_min = 0
+        z_max = 6
+        
     df['day'] = [datetime.date(date) for date in df_raw['date']]
     
     d1 = datetime.date(df['date'].min())
@@ -343,7 +350,7 @@ def calendar_heatmap(df):
     dates_in_year = [d1 + timedelta(i) for i in range(delta.days+1)] #gives me a list with datetimes for each day a year
     weekdays_in_year = [i.weekday() for i in dates_in_year] #gives [0,1,2,3,4,5,6,0,1,2,3,4,5,6,…] (ticktext in xaxis dict translates this to weekdays
     weeknumber_of_dates = [i.strftime("w%V %G") for i in dates_in_year] #gives [1,1,1,1,1,1,1,2,2,2,2,2,2,2,…] name is self-explanatory
-    z = df_raw.groupby('day').mean()['label'] #np.random.randint(3, size=(len(dates_in_year)))
+    z = df_raw.groupby('day').mean()[f'label{label}'] #np.random.randint(3, size=(len(dates_in_year)))
     text = [str(i) for i in dates_in_year] #gives something like list of strings like '2018-01-25' for each date. Used in data trace to make good hovertext.
     
     trace = dict(
@@ -355,8 +362,8 @@ def calendar_heatmap(df):
         hoverinfo="text+z",
         xgap=3, # this
         ygap=3, # and this is used to make the grid-like apperance
-        zmin=0,
-        zmax=6,
+        zmin=z_min,
+        zmax=z_max,
         showscale=False,
         colorscale=[(0.00, colors['chm-red']),   (0.7, colors['chm-red']),
                     (0.7, colors['chm-yellow']), (0.9, colors['chm-yellow']),
@@ -382,6 +389,25 @@ def calendar_heatmap(df):
         margin = dict(t=40),
     )
     return dict(data=[trace], layout=layout)
+
+calendar_heatmap_layout = html.Div([
+        dbc.Tabs([
+            dbc.Tab(label='General', tab_id='general'), 
+            dbc.Tab(label='Seccion 1', tab_id='S1'),
+            dbc.Tab(label='Seccion 2', tab_id='S2'),
+        ], id='chm-tabs', active_tab='products'),
+        html.Div(id='chm-tab-content', className='h-100')
+    ], className='h-100') 
+
+def calendar_heatmap_figure(df, seccion):
+    return html.Div([
+        dcc.Graph(
+            id='calendar-heatmap',
+            figure=calendar_heatmap(df, seccion),
+            className = 'col-12',
+            style=dict(background=colors['graph-bg'])
+        ),
+    ], className='pr-4 pl-5 row w-100 py-5')
 #%%###########################################################################
 #                     02_02. FUNCIONES (SECCION PAGE)                        #
 ##############################################################################
@@ -892,7 +918,7 @@ home_page_layout = html.Div([
     dbc.Tabs([
         dbc.Tab(label='Tiempo Real', tab_id='real'),
         dbc.Tab(label='Historico', tab_id='hist'),
-    ], id='home-page-tabs', style={"height": "4vh"}), 
+    ], id='home-page-tabs', style={"height": "4.5vh"}), 
     html.Div(id='home-page-content', style={"height": "86vh"})
 ], className='h-100')
 
@@ -997,6 +1023,12 @@ def change_page(click_data, click_data_hist):
                 fal_s2 = get_cards_layout(col_fal_s2, False)
     return [{'des_s1': (des_s1), 'fal_s1': (fal_s1), 'des_s2': (des_s2), 'fal_s2': (fal_s2)}, '/seccions', {'id': point_id}]
 
+@app.callback(
+    Output("chm-tab-content", "children"),
+    [Input("chm-tabs", "active_tab")],
+)
+def render_tab_content(active_tab):    
+        return calendar_heatmap_figure(df_raw, active_tab)
     
 #%%###########################################################################
 #                           05_1. SECCIONS-PAGE                              #
