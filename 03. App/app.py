@@ -1205,7 +1205,8 @@ seccions_page_layout = html.Div([
             , className='col-5 h-100', id='list_columns'),                
             html.Div(className='col-2 h-100'),
             # Imagen
-            html.Img(src=app.get_asset_url(f"plant-s1.png"), className='mx-auto d-block col-4 h-100'),
+            html.Img(src=app.get_asset_url(f"plant-s1.png"), id='seccion-img',\
+                     className='mx-auto d-block col-4 h-100'),
             # html.Div(className='col-1'),
         ], className='row w-100 h-50 pb-3'),
         html.Br(),
@@ -1235,7 +1236,8 @@ seccions_page_layout = html.Div([
 
 
 @app.callback(
-    [Output("signal-dropdown", "options"), Output("signal-dropdown", "value")],
+    [Output("signal-dropdown", "options"), Output("signal-dropdown", "value"), \
+     Output("seccion-img", "src")],
     [Input("seccion-tabs", "active_tab")],
 )
 def render_seccion_tab_content(active_tab):
@@ -1245,7 +1247,7 @@ def render_seccion_tab_content(active_tab):
     else:
         columns = [{'label': x, 'value': x} for x in columns_s2]
         default = 'Flotation Column 02 Level' 
-    return [columns, default]
+    return [columns, default, app.get_asset_url(f"plant-{active_tab}.png")]
 
 # Callback que actualiza la targeta de información de ID S1
 @app.callback(Output('card_info_id', 'children'),
