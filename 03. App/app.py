@@ -123,13 +123,12 @@ def get_home_tab_layout(tab):
         altertab = 'hist'
         titulo = 'Tiempo Real'
         filters = html.Div([
-            html.Br(),
             html.Div([
                 html.Div(className='col-11'),
                 dbc.Button("Pause", className='ml-auto', id="pause-button"),
                 # html.Div(className='col-1'),
-            ], className='row w-100 px-5'), 
-        ])
+            ], className='row w-100 px-5 pb-1 h-100'), 
+        ], className='h-100')
         # Interval, sirve para ir actualizando el gráfico cada GRAPH_INTERVAL ms
         interval = dcc.Interval(
                 id="signal-update",
@@ -189,26 +188,34 @@ def get_home_tab_layout(tab):
             #         },
             #     className='h-25'
             # ),
-            html.Div(filters, className='pt-3 pb-1 h-25'),
             # Gráfico y filtros
-            html.Div([
+            # html.Div([
                 # html.Div(className='col-1'), #, style=dict(height=pp_size)
                 # Gráfico general del comportamiento de la planta
-                dcc.Graph(
-                    id=f'plant-plot-{tab}',
-                    figure=dict(
-                        layout=dict(
-                            plot_bgcolor=colors["graph-bg"],
-                            paper_bgcolor=colors["graph-bg"],
-                        )
-                    ),
-                    className = 'col-12',
-                    style=dict(background=colors['graph-bg'])
-                ),
-            ], className='row h-75 w-100 pr-4 pl-5 pt-2'),
+                dbc.Card([
+                    dbc.CardHeader([html.H4('Title', className='text-center')], className='my-0 py-1'),
+                    dbc.CardBody([
+                        html.Div([
+                            html.Div(filters, className='', style={"height": "12%"}),
+                            html.Div([
+                                dcc.Graph(
+                                    id=f'plant-plot-{tab}',
+                                    figure=dict(
+                                        layout=dict(
+                                            plot_bgcolor=colors["graph-bg"],
+                                            paper_bgcolor=colors["graph-bg"],
+                                        )
+                                    ),
+                                    className='h-100',
+                                ),
+                            ], className='px-2 pt-1', style=dict( height= "88%"))
+                        ], className='h-100')
+                    ], className='py-2', style={"height": "85%"}),
+                ], className='h-100 w-100'),
+            # ], className='row h-75 w-100 pr-4 pl-5 pt-2'),
             html.Div([dcc.Graph(id=f'plant-plot-{altertab}')],className='invisible h-25'),
             interval,
-        ], className='h-50 pb-3'), 
+        ], className='h-50 pb-3 px-4 pt-2'), 
         # html.Br(),
         html.Div(bottom_seccion, id='hp-bottom-div', className='h-50 pt-3 w-100'),
         # # Imagen de la planta
@@ -371,7 +378,6 @@ def calendar_heatmap(df, seccion):
                     (0.85, colors['chm-good']),  (1.00, colors['chm-good'])]
     )
     layout = dict(
-        title='activity chart',
         height=280,
         yaxis=dict(
             showline = False, showgrid = False, zeroline = False,
@@ -397,18 +403,26 @@ calendar_heatmap_layout = html.Div([
             dbc.Tab(label='Seccion 1', tab_id='S1'),
             dbc.Tab(label='Seccion 2', tab_id='S2'),
         ], id='chm-tabs', active_tab='products'),
-        html.Div(id='chm-tab-content', className='h-100')
+        html.Div(id='chm-tab-content', className='', style=dict(hegiht='90%'))
     ], className='h-100 w-50') 
 
 def calendar_heatmap_figure(df, seccion):
     return html.Div([
-        dcc.Graph(
-            id='calendar-heatmap',
-            figure=calendar_heatmap(df, seccion),
-            className = 'col-12',
-            style=dict(background=colors['graph-bg'])
-        ),
-    ], className='pr-4 pl-5 row w-100 py-5 h-100')
+        dbc.Card([
+            dbc.CardHeader([html.H4('Activity chart', className='text-center')], className='my-0 py-1'),
+            dbc.CardBody([
+                dcc.Graph(
+                    id='calendar-heatmap',
+                    figure=calendar_heatmap(df, seccion),
+                    className = 'col-12',
+                    style=dict(
+                        background=colors['graph-bg'],
+                        height='100%'
+                    )
+                ),
+            ], className='h-100 w-100 py-1')
+        ], className='h-100 w-100')
+    ], className='pr-4 pl-5 row w-100 py-2 h-100')
 #%%###########################################################################
 #                     02_02. FUNCIONES (SECCION PAGE)                        #
 ##############################################################################
@@ -817,35 +831,43 @@ def summary_tab_layout(tab, df, single):
             ], className='col-3 px-5 h-100'),
             # html.Div(className='col-1'),
             html.Div([
-                html.H4('Buenas vs. Malas', className='text-center', style={"height": '10%'}),
-                dcc.Graph(
-                    id=f'bar-plot-{tab}',
-                    figure=dict(
-                        data = data_bar,
-                        layout=layout_bar,
-                    ),
-                    style={"height": '90%'},
-                ),
+                dbc.Card([
+                    dbc.CardHeader([html.H5('Buenas vs. Malas', className='text-center')], className='py-1'),
+                    # html.H4('Buenas vs. Malas', className='text-center', style={"height": '10%'}),
+                    dbc.CardBody([
+                        dcc.Graph(
+                            id=f'bar-plot-{tab}',
+                            figure=dict(
+                                data = data_bar,
+                                layout=layout_bar,
+                            ),
+                            style={"height": '100%'},
+                        ),
+                    ], className='py-1 px-2'),
+                ], className='h-100 w-100'),
             ], className='col-4 px-5 h-100'),
             # html.Div(className='col-1 h-100'),
             html.Div([
-                html.H4(titulo_line_plot, className='text-center', style={"height": '10%'}),
-                dcc.Graph(
-                    id=f'time-plot-{tab}',
-                    figure=dict(
-                        data = [data_line],
-                        layout = layout_line,
-                    ),
-                    style={"height": '90%'},
-                ),
-            ], className='col-4 pl-5 pr-2 h-100'),
-            html.Div(pq_selector
-                # html.Div(
-                #     pq_selector,
-                #     className='col-11'),
-                # html.Div([
-                # ], className='col-1'),
-            ,className='col-1 pt-4 h-100'),
+                dbc.Card([
+                    # html.H4(titulo_line_plot, className='text-center', style={"height": '10%'}),
+                    dbc.CardHeader([html.H5(titulo_line_plot, className='text-center')], className='py-1'),
+                    dbc.CardBody([
+                        html.Div([
+                            dcc.Graph(
+                                id=f'time-plot-{tab}',
+                                figure=dict(
+                                    data = [data_line],
+                                    layout = layout_line,
+                                ),
+                                style={"height": '100%'},
+                                className='col-10'
+                            ),
+                            html.Div(pq_selector,className='col-2 pt-4 h-100'),
+                        ], className='row h-100')
+                    ], className='h-100 py-1 px-2')
+                ], className='h-100')
+            ], className='col-5 pl-5 pr-2 h-100'),
+            
         ], className='row py-3 w-100', style={"height": '90%'})], className='py-3', style={"height": hcontainer})
 
 # Devuelve el gráfico de barras de barras buenas/malas en funcion de una o varias columnas
