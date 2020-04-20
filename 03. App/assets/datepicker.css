@@ -1,0 +1,10 @@
+ /*actually either class is good, use both just to be sure*/
+.DateInput_input, .DateInput_input_1 {
+  font-size: inherit;  /*or whatever size you would like to have*/
+  text-align: center;
+}
+
+.DateInput, .DateInput_1 {
+  width: 100%;
+  height: 100%;
+}
