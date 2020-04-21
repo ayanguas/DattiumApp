@@ -121,7 +121,7 @@ size_font_summary = 16 # Summary Graph Text Size
 size_font_cards = 16 # Font Text Size
 pp_size = '10%' # Plant plot graph size
 summary_graph_size = '400px' # Summary graphs size
-navbar_logo_size = "40px" # Navbar logo size
+navbar_logo_size = "90%" # Navbar logo size
 
 #%%###########################################################################
 #                       02_01. FUNCIONES (HOME PAGE)                         #
@@ -154,9 +154,6 @@ def get_home_tab_layout(tab):
         date_min = datetime(2017, 4, 1, 1, 0, 0) #df_raw['date'].min()
         date_max = datetime(2017, 5, 10, 1, 0, 0) # df_raw['date'].max()
         filters = html.Div([
-            # html.Div(className='col-1'),
-            # html.H4('Filtros'),
-            # html.Br(),
             html.Div([
                 html.Div([
                     html.H6('Fecha desde', className='col-4'),
@@ -268,53 +265,31 @@ def get_home_tab_layout(tab):
     content = html.Div([
         # PLot of general view of plant
         html.Div([
-            # Titulo del gráfico
-            # html.H1(
-            #     id=f'header-plant-plot-{tab}',
-            #     children=titulo,
-            #     style={
-            #         'textAlign': 'center',
-            #         'color': colors['text'],
-            #         'padding-top': '30px'
-            #         },
-            #     className='h-25'
-            # ),
-            # Gráfico y filtros
-            # html.Div([
-                # html.Div(className='col-1'), #, style=dict(height=pp_size)
-                # Gráfico general del comportamiento de la planta
-                dbc.Card([
-                    dbc.CardHeader([html.H4('Title', className='text-center')], className='my-0 py-1'),
-                    dbc.CardBody([
+            dbc.Card([
+                dbc.CardHeader([html.H4('Title', className='text-center')], className='my-0 py-1'),
+                dbc.CardBody([
+                    html.Div([
+                        html.Div(filters, id='filters-container', className='', style={"height": plant_plot_filter_h}),
                         html.Div([
-                            html.Div(filters, id='filters-container', className='', style={"height": plant_plot_filter_h}),
-                            html.Div([
-                                dcc.Graph(
-                                    id=f'plant-plot-{tab}',
-                                    figure=dict(
-                                        layout=dict(
-                                            plot_bgcolor=colors["graph-bg"],
-                                            paper_bgcolor=colors["graph-bg"],
-                                        )
-                                    ),
-                                    className='h-100',
+                            dcc.Graph(
+                                id=f'plant-plot-{tab}',
+                                figure=dict(
+                                    layout=dict(
+                                        plot_bgcolor=colors["graph-bg"],
+                                        paper_bgcolor=colors["graph-bg"],
+                                    )
                                 ),
-                            ], className='px-2 pt-1', id='plant-plot-container', style=dict( height= plant_plot_graph_h))
-                        ], className='h-100')
-                    ], className='py-2', style={"height": "85%"}),
-                ], className='h-100 w-100'),
-            # ], className='row h-75 w-100 pr-4 pl-5 pt-2'),
+                                className='h-100',
+                            ),
+                        ], className='px-2 pt-1', id='plant-plot-container', style=dict( height= plant_plot_graph_h))
+                    ], className='h-100')
+                ], className='py-2', style={"height": "85%"}),
+            ], className='h-100 w-100'),
             html.Div([dcc.Graph(id=f'plant-plot-{altertab}')],className='invisible h-25'),
             interval,
-        ], className='h-50 pb-3 px-4 pt-2'), 
+        ], className='pb-3 px-4 pt-2 h-50'), 
         # html.Br(),
-        html.Div(bottom_seccion, id='hp-bottom-div', className='h-50 pt-3 w-100'),
-        # # Imagen de la planta
-        # html.Div([
-        #     html.Img(src=app.get_asset_url("plant-diagram.png"), \
-        #               className='img-fluid mx-auto d-inline-block',\
-        #               style={'max-height': '100%'})
-        # ], className = 'row h-50 mt-5 pt-5'),
+        html.Div(bottom_seccion, id='hp-bottom-div', className='pt-3 w-100 h-50'),
     ], className='h-100 w-100')   
     return content
 
@@ -336,13 +311,6 @@ def get_plant_plot(df):
         # Texto que se muestra al pasar el cursor por encima de un punto
         hovertext = ['<b>Id</b>: {}<br><b>All</b>: {}<br><b>S1</b>: {}<br><b>S2</b>: {}<br><b>S3</b>: {}'.format(row['id'],row['label'], row['label_S1'], row['label_S2'], row['label_S3']) \
                      for index, row in df.iterrows()],
-        # error_y={
-        #     "type": "data",
-        #     "array": df["SpeedError"],
-        #     "thickness": 1.5,
-        #     "width": 2,
-        #     "color": "#B4E8FC",
-        # },
         mode="markers",
         name='Label',
         marker=dict(
@@ -363,11 +331,7 @@ def get_plant_plot(df):
             "showline": False,
             "zeroline": False,
             "fixedrange": True,
-            # "tickvals": [0, 25, 50, 75, 100],
-            # "ticktext": ["100", "75", "50", "25", "0"],
-            # "title": "Time Elapsed (hours)",
             "ylabel": column,
-            # "automargin": True,
         },
         yaxis={
             "range": [
@@ -493,9 +457,11 @@ calendar_heatmap_layout = html.Div([
             dbc.Tab(label='General', tab_id='general'), 
             dbc.Tab(label='Seccion 1', tab_id='S1'),
             dbc.Tab(label='Seccion 2', tab_id='S2'),
-        ], id='chm-tabs', active_tab='products'),
-        html.Div(id='chm-tab-content', className='w-50', style=dict(hegiht='90%')),
-        html.Div(id='info-tab-content', className='w-50', style=dict(hegiht='90%')),
+        ], id='chm-tabs', active_tab='general'),
+        html.Div([
+            html.Div(id='chm-tab-content', className='col-6 px-2 h-100'),
+            html.Div(id='info-tab-content', className='col-6 px-2 h-100'),
+        ], className='row w-100 pt-1 mx-0', style=dict(height='calc(100% - 40px)'))
     ], className='h-100 w-100') 
 
 def calendar_heatmap_figure(df, seccion):
@@ -514,19 +480,60 @@ def calendar_heatmap_figure(df, seccion):
                 ),
             ], className='h-100 w-100 py-1')
         ], className='h-100 w-100')
-    ], className='pr-4 pl-5 row w-100 py-2 h-100')
+    ], className='px-3 row w-100 py-2 h-100 mx-0')
+
+def chm_info_layout():
+    return html.Div([
+        dbc.Card([
+            dbc.CardHeader([html.H4('Activity info', className='text-center')], className='my-0 py-1'),
+            dbc.CardBody([
+                html.Div([
+                    dbc.Card([
+                        chm_card_content(1)
+                    ], className='ml-4 col-3 bg-secondary text-center'),
+                    html.Div(className='col-1'),
+                    dbc.Card([
+                        chm_card_content(2)
+                    ], className='h-100 col-3 bg-secondary text-center'),
+                    html.Div(className='col-1'),
+                    dbc.Card([
+                        chm_card_content(3)
+                    ], className='h-100 col-3 bg-secondary text-center'),
+                ], className='row h-100 py-4 mx-auto')
+            ], className='h-100 w-100 py-1')
+        ], className='h-100 w-100')
+    ], className='px-3 row w-100 py-2 h-100 mx-0')
+
+def chm_card_content(card):
+    data={
+        1: {
+            "first" : '% de efciencia en los últimos 30 días',
+            "second" : '97%',
+            "third" : '30 Mayo 2017 - 30 Junio 2017'
+        },
+        2: {
+            "first" : 'Racha actual de eficiencia',
+            "second" : '3 días',
+            "third" : '27 Junio 2017 - 30 Junio 2017'
+        },
+        3: {
+            "first" : 'Mayor racha de eficiencia',
+            "second" : '27 días',
+            "third" : '3 Mayo 2017 - 30 Mayo 2017'
+        },
+    }
+    return html.Div([
+        html.Div(data[card]['first'], style={"font-size": "0.8rem", "color": colors['text']}),
+        html.Div(data[card]['second'], style={"font-size": "3rem"}),
+        html.Div(data[card]['third'], style={"font-size": "0.8rem", "color": colors['text']}),
+    ], className='my-auto')
 #%%###########################################################################
 #                     02_02. FUNCIONES (SECCION PAGE)                        #
 ##############################################################################
 # Devuelve el layout de las listas con las señales con fallos
 def list_columns_layout(tab):
-    if tab == 's1':
-        seccion = '1'
-    else:
-        seccion = '2'
     # Titulo seccion
-    return [#html.H2('Seccion ' + seccion, id='header', className='text-center'),
-    # html.Br(),
+    return [
     # Listas de desviacion y fallos de registro/sensor S1
     html.Div([
          # Lista de desviacion S1
@@ -822,7 +829,6 @@ def make_table(df):
 
 # Devuelve la tabla resumen por producto
 def product_summary_table(df):
-    # df = pd.read_sql(('SELECT * FROM signals'), server_conn)
     max_p = df.groupby('product').count()['id'].idxmax() # Producto más fabricado
     max_q = df.groupby('quality').count()['id'].idxmax() # Calidad más fabricada
     max_pq = df.groupby(['product', 'quality']).count()['id'].idxmax() # Producto-Calidad más fabricado
@@ -867,7 +873,6 @@ def summary_tab_layout(tab, df, single):
                                                 df['quality'].unique())    
         pq_selector = [
             dbc.FormGroup([
-                dbc.Label("Selector de producto"),
                 dbc.Checklist(
                     options=[{"label": f"Product {product}", "value": product}\
                              for product in np.sort(df['product'].unique())],                
@@ -876,7 +881,6 @@ def summary_tab_layout(tab, df, single):
                 ),
             ]),
             dbc.FormGroup([
-                dbc.Label("Selector de calidad"),
                 dbc.Checklist(
                     options=[{"label": f"Calidad {quality}", "value": quality}\
                              for quality in np.sort(df['quality'].unique())],                
@@ -893,7 +897,7 @@ def summary_tab_layout(tab, df, single):
         data_line, layout_line = liner_graph_seccions_summary(df, '1')
         pq_selector = [
             dbc.FormGroup([
-                dbc.Label("Selector de seccion"),
+                # dbc.Label("Selector de seccion"),
                 dbc.RadioItems(
                     options=[{"label": f"Seccion {seccion}", "value": seccion}\
                              for seccion in [1,2,3]],                
@@ -903,14 +907,8 @@ def summary_tab_layout(tab, df, single):
             ]),
         ]         
     return html.Div([
-        # html.Br(),
-        html.H2(f'Resumen de {tab}', className='px-5', style={"height": '10%'}),
-        # html.Br(),
         html.Div([
-            # html.Div(className='col-1'),
             html.Div([
-                # html.Div(className='col-1'),
-                html.H4(f'Detalles de {tab}', className='invisible', style={"height": '10%'}),
                 dbc.Table(table, 
                           striped=True, 
                             # bordered=True, 
@@ -921,11 +919,9 @@ def summary_tab_layout(tab, df, single):
                           style={"height": '90%'},
                           id=f'summary-table-{tab}')
             ], className='col-3 px-5 h-100'),
-            # html.Div(className='col-1'),
             html.Div([
                 dbc.Card([
                     dbc.CardHeader([html.H5('Buenas vs. Malas', className='text-center')], className='py-1'),
-                    # html.H4('Buenas vs. Malas', className='text-center', style={"height": '10%'}),
                     dbc.CardBody([
                         dcc.Graph(
                             id=f'bar-plot-{tab}',
@@ -938,10 +934,8 @@ def summary_tab_layout(tab, df, single):
                     ], className='py-1 px-2'),
                 ], className='h-100 w-100'),
             ], className='col-4 px-5 h-100'),
-            # html.Div(className='col-1 h-100'),
             html.Div([
                 dbc.Card([
-                    # html.H4(titulo_line_plot, className='text-center', style={"height": '10%'}),
                     dbc.CardHeader([html.H5(titulo_line_plot, className='text-center')], className='py-1'),
                     dbc.CardBody([
                         html.Div([
@@ -1095,8 +1089,8 @@ reports_page_layout1 = html.Div([
             dbc.Tab(label='Resumen por producto', tab_id='products'), 
             dbc.Tab(label='Resumen por seccion', tab_id='seccions'),
             dbc.Tab(label='Resumen', tab_id='all'),
-        ], id='summary-tabs', active_tab='products'),
-        html.Div(id='summary-tab-content', className='h-100')
+        ], id='summary-tabs', active_tab='products', className='Tabs1'),
+        html.Div(id='summary-tab-content', style=dict(height='calc(100% - 40px)'))
     ], className='h-100') 
 
 #%%###########################################################################
@@ -1111,14 +1105,13 @@ navbar = dbc.Navbar([
                 html.Img(src=app.get_asset_url(navbar_image),\
                                           height=navbar_logo_size),
                 href="/",
-                className='float-right col-2'
+                className='float-right col-2 h-100'
             ),
             dbc.Nav([
-                # dbc.NavbarToggler(id="navbar-toggler"),
                 dbc.NavItem(dbc.NavLink("Home", href="/", style={"color":colors['text']})),
                 dbc.NavItem(dbc.NavLink("Reports", href="/reports", style={"color":colors['text']})),
-            ]),
-    ], className='lg', color=colors['navbar'], style={"height": '5vh'})
+            ], className=''),
+    ], className='lg py-1 px-1', color=colors['navbar'], style={"height": '5vh'})
     
 # Layout de la app
 app.layout = html.Div([
@@ -1129,12 +1122,12 @@ app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     navbar,
     # Contenido de las paginas
-    html.Div(id='page-content', className='w-100', style={"height": '86vh'}),
+    html.Div(id='page-content', className='w-100', style={"height": '92vh'}),
     html.Footer([
         html.Div([
             '© 2020 Copyright: Dattium Technology'
-        ], className='container text-center pt-5')
-    ], className=''),
+        ], className='text-center')
+    ], className='py-1', style={"height": '3vh'}),
 ], className='min-vh-100 vh-100 w-100')
 
 # Update the index
@@ -1155,12 +1148,13 @@ def display_page(pathname):
 ##############################################################################
     
 # Pagina 1, imagen de la planta y un gráfico general con el comportamiento de esta
+
 home_page_layout = html.Div([
     dbc.Tabs([
         dbc.Tab(label='Tiempo Real', tab_id='real'),
         dbc.Tab(label='Historico', tab_id='hist'),
     ], id='home-page-tabs'), 
-    html.Div(id='home-page-content', style={"height": "82vh"}),
+    html.Div(id='home-page-content', style={"height": "calc(100% - 40px)"}),
 ], className='h-100')
 
 #%%###########################################################################
@@ -1266,11 +1260,11 @@ def change_page(click_data, click_data_hist):
     return [{'des_s1': (des_s1), 'fal_s1': (fal_s1), 'des_s2': (des_s2), 'fal_s2': (fal_s2)}, '/seccions', {'id': point_id}]
 
 @app.callback(
-    Output("chm-tab-content", "children"),
+    [Output("chm-tab-content", "children"), Output("info-tab-content", "children")],
     [Input("chm-tabs", "active_tab")],
 )
 def render_chm_tab_content(active_tab):    
-        return calendar_heatmap_figure(df_raw, active_tab)
+        return [calendar_heatmap_figure(df_raw, active_tab), chm_info_layout()]
     
 @app.callback(
     [Output("date-min", "date"), Output("hour-min", "value"), Output("min-min", "value")],
@@ -1348,7 +1342,7 @@ seccions_page_layout = html.Div([
                 histo_layout('s1')
             ,className='histogram-plot col-5 h-100'),
         ], id='graficos', className='row w-100 h-50 pt-2')
-    ], id='seccion-content', className='h-100 py-3 pl-4')
+    ], id='seccion-content', className='py-3 pl-4', style=dict(height='calc(100% - 40px)'))
 ], className = 'h-100 w-100')
 
 #%%###########################################################################
