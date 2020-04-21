@@ -266,7 +266,7 @@ def get_home_tab_layout(tab):
         # PLot of general view of plant
         html.Div([
             dbc.Card([
-                dbc.CardHeader([html.H4('Title', className='text-center')], className='my-0 py-1'),
+                dbc.CardHeader([html.H5('Resumen del processo', className='py-0')], className='px-2 pt-1 p-0'),
                 dbc.CardBody([
                     html.Div([
                         html.Div(filters, id='filters-container', className='', style={"height": plant_plot_filter_h}),
@@ -467,7 +467,7 @@ calendar_heatmap_layout = html.Div([
 def calendar_heatmap_figure(df, seccion):
     return html.Div([
         dbc.Card([
-            dbc.CardHeader([html.H4('Activity chart', className='text-center')], className='my-0 py-1'),
+            dbc.CardHeader([html.H5('Resumen por día')], className='px-2 pt-1 p-0'),
             dbc.CardBody([
                 dcc.Graph(
                     id='calendar-heatmap',
@@ -485,7 +485,7 @@ def calendar_heatmap_figure(df, seccion):
 def chm_info_layout():
     return html.Div([
         dbc.Card([
-            dbc.CardHeader([html.H4('Activity info', className='text-center')], className='my-0 py-1'),
+            dbc.CardHeader([html.H5('Información general')], className='px-2 pt-1 p-0'),
             dbc.CardBody([
                 html.Div([
                     dbc.Card([
@@ -568,7 +568,7 @@ def line_plot_layout(tab):
     # Título del gráfico 
     return [
         dbc.Card([
-            dbc.CardHeader([html.H4('Signal Plot', className='text-center'),]),
+            dbc.CardHeader([html.H4('Análisis Temporal')], className='px-2 pt-1 p-0'),
             # Gráfico S1
             dbc.CardBody([
                 dcc.Graph(
@@ -590,7 +590,7 @@ def histo_layout(tab):
     return [
     # Título del histograma de S1
     dbc.Card([
-        dbc.CardHeader([html.H4('Histograma', className='text-center'),]),
+        dbc.CardHeader([html.H4('Comparativa de operación')], className='px-2 pt-1 p-0'),
         dbc.CardBody([
             # Histograma de S1
             dcc.Graph(
@@ -921,7 +921,7 @@ def summary_tab_layout(tab, df, single):
             ], className='col-3 px-5 h-100'),
             html.Div([
                 dbc.Card([
-                    dbc.CardHeader([html.H5('Buenas vs. Malas', className='text-center')], className='py-1'),
+                    dbc.CardHeader([html.H5('Buenas vs. Malas')], className='px-2 pt-1 p-0'),
                     dbc.CardBody([
                         dcc.Graph(
                             id=f'bar-plot-{tab}',
@@ -936,7 +936,7 @@ def summary_tab_layout(tab, df, single):
             ], className='col-4 px-5 h-100'),
             html.Div([
                 dbc.Card([
-                    dbc.CardHeader([html.H5(titulo_line_plot, className='text-center')], className='py-1'),
+                    dbc.CardHeader([html.H5(titulo_line_plot)], className='px-2 pt-1 p-0'),
                     dbc.CardBody([
                         html.Div([
                             dcc.Graph(
