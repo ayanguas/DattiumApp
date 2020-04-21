@@ -144,7 +144,7 @@ def get_home_tab_layout(tab):
                 interval=int(GRAPH_INTERVAL),
                 n_intervals=0,
             )
-        bottom_seccion = html.Div([calendar_heatmap_layout], className='py-3 h-100')
+        bottom_seccion = html.Div([bottom_seccion_real_layout], className='py-3 h-100')
         plant_plot_graph_h = '88%'
         plant_plot_filter_h = '12%'
         
@@ -388,7 +388,7 @@ def get_plant_plot(df):
     )
     return trace, layout
 
-# Calendar HeatMap
+# Calendar HeatMap  Figure Layout and Traces
 def calendar_heatmap(df, seccion):
     if seccion == 'S1':
         label = '_S1'
@@ -433,7 +433,6 @@ def calendar_heatmap(df, seccion):
                     (0.85, colors['chm-good']),  (1.00, colors['chm-good'])]
     )
     layout = dict(
-        height=280,
         yaxis=dict(
             showline = False, showgrid = False, zeroline = False,
             tickmode="array",
@@ -452,58 +451,7 @@ def calendar_heatmap(df, seccion):
     )
     return dict(data=[trace], layout=layout)
 
-calendar_heatmap_layout = html.Div([
-        dbc.Tabs([
-            dbc.Tab(label='General', tab_id='general'), 
-            dbc.Tab(label='Seccion 1', tab_id='S1'),
-            dbc.Tab(label='Seccion 2', tab_id='S2'),
-        ], id='chm-tabs', active_tab='general'),
-        html.Div([
-            html.Div(id='chm-tab-content', className='col-6 px-2 h-100'),
-            html.Div(id='info-tab-content', className='col-6 px-2 h-100'),
-        ], className='row w-100 pt-1 mx-0', style=dict(height='calc(100% - 40px)'))
-    ], className='h-100 w-100') 
-
-def calendar_heatmap_figure(df, seccion):
-    return html.Div([
-        dbc.Card([
-            dbc.CardHeader([html.H5('Resumen por día')], className='px-2 pt-1 p-0'),
-            dbc.CardBody([
-                dcc.Graph(
-                    id='calendar-heatmap',
-                    figure=calendar_heatmap(df, seccion),
-                    className = 'col-12',
-                    style=dict(
-                        background=colors['graph-bg'],
-                        height='100%'
-                    )
-                ),
-            ], className='h-100 w-100 py-1')
-        ], className='h-100 w-100')
-    ], className='px-3 row w-100 py-2 h-100 mx-0')
-
-def chm_info_layout():
-    return html.Div([
-        dbc.Card([
-            dbc.CardHeader([html.H5('Información general')], className='px-2 pt-1 p-0'),
-            dbc.CardBody([
-                html.Div([
-                    dbc.Card([
-                        chm_card_content(1)
-                    ], className='ml-4 col-3 bg-secondary text-center'),
-                    html.Div(className='col-1'),
-                    dbc.Card([
-                        chm_card_content(2)
-                    ], className='h-100 col-3 bg-secondary text-center'),
-                    html.Div(className='col-1'),
-                    dbc.Card([
-                        chm_card_content(3)
-                    ], className='h-100 col-3 bg-secondary text-center'),
-                ], className='row h-100 py-4 mx-auto')
-            ], className='h-100 w-100 py-1')
-        ], className='h-100 w-100')
-    ], className='px-3 row w-100 py-2 h-100 mx-0')
-
+# Card content
 def chm_card_content(card):
     data={
         1: {
@@ -527,6 +475,66 @@ def chm_card_content(card):
         html.Div(data[card]['second'], style={"font-size": "3rem"}),
         html.Div(data[card]['third'], style={"font-size": "0.8rem", "color": colors['text']}),
     ], className='my-auto')
+
+# Calendar HeatMap Layout
+calendar_heatmap_layout = html.Div([
+    dbc.Card([
+        dbc.CardHeader([html.H5('Resumen por día')], className='px-2 pt-1 p-0'),
+        dbc.CardBody([
+            dcc.Graph(
+                id='calendar-heatmap',
+                figure=dict(
+                    layout=dict(
+                        plot_bgcolor=colors["graph-bg"],
+                        paper_bgcolor=colors["graph-bg"],
+                    )
+                ),
+                # figure=calendar_heatmap(df, seccion),
+                className = 'col-12',
+                style=dict(
+                    background=colors['graph-bg'],
+                    height='100%'
+                )
+            ),
+        ], className='h-100 w-100 py-1')
+    ], className='h-100 w-100')
+], className='px-3 row w-100 py-2 h-100 mx-0')
+
+# Calendar HeatMap Info Layout
+chm_info_layout = html.Div([
+    dbc.Card([
+        dbc.CardHeader([html.H5('Información general')], className='px-2 pt-1 p-0'),
+        dbc.CardBody([
+            html.Div([
+                dbc.Card([
+                    chm_card_content(1)
+                ], id='chm_info_card1', className='ml-4 col-3 bg-secondary text-center'),
+                html.Div(className='col-1'),
+                dbc.Card([
+                    chm_card_content(2)
+                ], id='chm_info_card2', className='h-100 col-3 bg-secondary text-center'),
+                html.Div(className='col-1'),
+                dbc.Card([
+                    chm_card_content(3)
+                ], id='chm_info_card3', className='h-100 col-3 bg-secondary text-center'),
+            ], className='row h-100 py-4 mx-auto')
+        ], className='h-100 w-100 py-1')
+    ], className='h-100 w-100')
+], className='px-3 row w-100 py-2 h-100 mx-0')
+
+# Bottom seccion real tab layout
+bottom_seccion_real_layout = html.Div([
+        dbc.Tabs([
+            dbc.Tab(label='General', tab_id='general'), 
+            dbc.Tab(label='Horno', tab_id='S1'),
+            dbc.Tab(label='Casetas', tab_id='S2'),
+        ], id='chm-tabs', active_tab='general'),
+        html.Div([
+            html.Div([calendar_heatmap_layout],id='chm-tab-content', className='col-6 px-2 h-100'),
+            html.Div([chm_info_layout], id='info-tab-content', className='col-6 px-2 h-100'),
+        ], className='row w-100 pt-1 mx-0', style=dict(height='calc(100% - 40px)'))
+    ], className='h-100 w-100') 
+
 #%%###########################################################################
 #                     02_02. FUNCIONES (SECCION PAGE)                        #
 ##############################################################################
@@ -1260,11 +1268,13 @@ def change_page(click_data, click_data_hist):
     return [{'des_s1': (des_s1), 'fal_s1': (fal_s1), 'des_s2': (des_s2), 'fal_s2': (fal_s2)}, '/seccions', {'id': point_id}]
 
 @app.callback(
-    [Output("chm-tab-content", "children"), Output("info-tab-content", "children")],
+    [Output("calendar-heatmap", "figure"), Output("chm_info_card1", "children"),
+     Output("chm_info_card2", "children"), Output("chm_info_card3", "children")],
     [Input("chm-tabs", "active_tab")],
 )
 def render_chm_tab_content(active_tab):    
-        return [calendar_heatmap_figure(df_raw, active_tab), chm_info_layout()]
+        return [calendar_heatmap(df_raw, active_tab), chm_card_content(1),
+                chm_card_content(2), chm_card_content(3)]
     
 @app.callback(
     [Output("date-min", "date"), Output("hour-min", "value"), Output("min-min", "value")],
@@ -1308,9 +1318,9 @@ seccions_page_layout = html.Div([
     # Dividimos la página en dos mediante tabs, para la S1 y S2
     dbc.Tabs([
         # # Tab S1
-        dbc.Tab(label='Seccion 1', tab_id='s1'),
+        dbc.Tab(label='Horno', tab_id='s1'),
         # Tab S2
-        dbc.Tab(label='Seccion 2', tab_id='s2'),
+        dbc.Tab(label='Caseta', tab_id='s2'),
     ], id='seccion-tabs'),
     html.Div([
         html.Div([
