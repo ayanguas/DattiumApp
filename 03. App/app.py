@@ -266,7 +266,7 @@ def get_home_tab_layout(tab):
         # PLot of general view of plant
         html.Div([
             dbc.Card([
-                dbc.CardHeader([html.H5('Resumen del processo', className='py-0')], className='px-2 pt-1 p-0'),
+                dbc.CardHeader([html.H5('Resumen del processo', className='py-0 text-style')], className='px-2 pt-1 p-0'),
                 dbc.CardBody([
                     html.Div([
                         html.Div(filters, id='filters-container', className='', style={"height": plant_plot_filter_h}),
@@ -388,6 +388,9 @@ def get_plant_plot(df):
     )
     return trace, layout
 
+def return_weeknumber(date):
+    return date.strftime("%Gww%V")
+
 # Calendar HeatMap  Figure Layout and Traces
 def calendar_heatmap(df, seccion):
     if seccion == 'S1':
@@ -407,14 +410,27 @@ def calendar_heatmap(df, seccion):
     
     d1 = datetime.date(df['date'].min())
     d2 = datetime.date(df['date'].max())
-    
     delta = d2 - d1
+    num_months = (d2.year - d1.year) * 12 + (d2.month - d1.month)
     
     dates_in_year = [d1 + timedelta(i) for i in range(delta.days+1)] #gives me a list with datetimes for each day a year
     weekdays_in_year = [i.weekday() for i in dates_in_year] #gives [0,1,2,3,4,5,6,0,1,2,3,4,5,6,…] (ticktext in xaxis dict translates this to weekdays
-    weeknumber_of_dates = [i.strftime("w%V %g") for i in dates_in_year] #gives [1,1,1,1,1,1,1,2,2,2,2,2,2,2,…] name is self-explanatory
+    weeknumber_of_dates = [i.strftime("%Gww%V") for i in dates_in_year] #gives [1,1,1,1,1,1,1,2,2,2,2,2,2,2,…] name is self-explanatory
     z = df.groupby('day').mean()[f'label{label}'] #np.random.randint(3, size=(len(dates_in_year)))
     text = [str(i) for i in dates_in_year] #gives something like list of strings like '2018-01-25' for each date. Used in data trace to _ta good hovertext.
+    
+    xtickvals = [d1.strftime("%Gww%V")]
+    xticktext = [d1.strftime("%b")]
+    month = d1.month + 1
+    year = d1.year
+    for i in range(1, num_months):
+        if month > 12:
+            month=1
+            year+=1
+        date = datetime(year, month, 1)
+        xtickvals = np.append(xtickvals, date.strftime("%Gww%V"))
+        xticktext = np.append(xticktext, date.strftime("%b"))
+        month += 1
     
     trace = dict(
         type='heatmap',
@@ -436,18 +452,19 @@ def calendar_heatmap(df, seccion):
         yaxis=dict(
             showline = False, showgrid = False, zeroline = False,
             tickmode="array",
-            ticktext=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-            tickvals=[0,1,2,3,4,5,6],
+            ticktext=["Tue", "Thu", "Sun"],
+            tickvals=[1,3,5],
             ticks = '',
         ),
         xaxis=dict(
             showline = False, showgrid = False, zeroline = False,
-            ticks = '',
+            ticktext= xticktext,
+            tickvals = xtickvals,
         ),
         font={"color": colors['text'], "size": size_font, "family": family_font,},
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
-        margin = dict(t=40),
+        margin = dict(t=40, b=40, r=15, l=30),
     )
     return dict(data=[trace], layout=layout)
 
@@ -479,7 +496,7 @@ def chm_card_content(card):
 # Calendar HeatMap Layout
 calendar_heatmap_layout = html.Div([
     dbc.Card([
-        dbc.CardHeader([html.H5('Resumen por día')], className='px-2 pt-1 p-0'),
+        dbc.CardHeader([html.H5('Resumen por día', className='text-style')], className='px-2 pt-1 p-0'),
         dbc.CardBody([
             dcc.Graph(
                 id='calendar-heatmap',
@@ -503,7 +520,7 @@ calendar_heatmap_layout = html.Div([
 # Calendar HeatMap Info Layout
 chm_info_layout = html.Div([
     dbc.Card([
-        dbc.CardHeader([html.H5('Información general')], className='px-2 pt-1 p-0'),
+        dbc.CardHeader([html.H5('Información general', className='text-style')], className='px-2 pt-1 p-0'),
         dbc.CardBody([
             html.Div([
                 dbc.Card([
@@ -538,45 +555,39 @@ bottom_seccion_real_layout = html.Div([
 #%%###########################################################################
 #                     02_02. FUNCIONES (SECCION PAGE)                        #
 ##############################################################################
-# Devuelve el layout de las listas con las señales con fallos
-def list_columns_layout(tab):
-    # Titulo seccion
-    return [
-    # Listas de desviacion y fallos de registro/sensor S1
-    html.Div([
-         # Lista de desviacion S1
-        html.Div(className='col-1'),
+
+# Layout con las listas de desviacion y fallos de registro/sensor S1
+list_columns_layout = html.Div([
+        # Lista de desviacion S1
         html.Div([
             dbc.Card([
                 dbc.CardHeader([
-                    html.H4('Desviaciones', className='text-center'),
+                    html.H4('Desviaciones', className='text-center text-style'),
                 ]),
                 dbc.CardBody([
                     dbc.ListGroup(id='list-des'), 
-                ]),
-            ], color='warning', outline=True),#col-4
-        ], className='col-5'),
-        html.Div(className='col-1'),
+                ], className='h-100'),
+            ], color='warning', outline=True, className='h-100'),
+        ], className='col-6 px-2 h-100'),
         # Lista de fallos de registro/sensor S1
         html.Div([
             dbc.Card([
                 dbc.CardHeader([
-                    html.H4('Fallos de registro/sensor', className='text-center'),
+                    html.H4('Fallos de registro/sensor', className='text-center text-style'),
                 ]),
                 dbc.CardBody([
                     dbc.ListGroup(id='list-fal'), 
-                ]),
-            ], color='danger', outline=True),#col-4
-        ], className='col-5'),
-        html.Div(className='col-1'),#col-1
-    ], className='row'),]#row
+                ], className='h-100'),
+            ], color='danger', outline=True, className='h-100'),
+        ], className='col-6 px-2 h-100'),
+    ], className='row h-100 m-0')#row
 
 # Devuelve el layout del gráfico de lina
 def line_plot_layout(tab):
     # Título del gráfico 
     return [
         dbc.Card([
-            dbc.CardHeader([html.H4('Análisis Temporal')], className='px-2 pt-1 p-0'),
+            dbc.CardHeader([html.H4('Análisis Temporal', className='text-style')], className='px-2 pt-1 p-0'),
             # Gráfico S1
             dbc.CardBody([
                 dcc.Graph(
@@ -598,7 +609,7 @@ def histo_layout(tab):
     return [
     # Título del histograma de S1
     dbc.Card([
-        dbc.CardHeader([html.H4('Comparativa de operación')], className='px-2 pt-1 p-0'),
+        dbc.CardHeader([html.H4('Comparativa de operación', className='text-style')], className='px-2 pt-1 p-0'),
         dbc.CardBody([
             # Histograma de S1
             dcc.Graph(
@@ -624,28 +635,38 @@ def dropdown_cardinfo_layout(tab):
         columns = columns_s2
         default = 'Flotation Column 02 Level'
         
-    return[ html.H4('Selector de señal'),
-    dcc.Dropdown(
-        id="signal-dropdown",
-        options=[{'label': x, 'value': x} for x in columns],
-        value=default,
-        style={
-            'color': colors['text-dropdown'],
-        },
-    ),
-    html.Br(),
-    # Carta informativa de la ID seleccionada S1
-    html.Div([
-        dbc.Card([
-            dbc.CardHeader([
-                html.H4('Información de la barra', className='text-center'),
-            ]),
-            dbc.CardBody([
-                # get_card_info_layout(id, default)
-                html.P("ID: ********", className='card-text text-left', id='card_info_id'),
-            ]),
-        ], outline=True)
-    ],className='rounded d-flex justify-content-center align-items-center'),]
+    return html.Div([
+            # Dropdown selector de señal
+            html.Div([
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.H4('Selector de señal', className='text-style m-0'),
+                    ], className='px-2 py-1'),
+                    dbc.CardBody([
+                        dcc.Dropdown(
+                            id="signal-dropdown",
+                            options=[{'label': x, 'value': x} for x in columns],
+                            value=default,
+                            style={
+                                'color': colors['text-dropdown'],
+                            },
+                        ),
+                    ], className='h-100'),
+                ], className='h-100'),
+            ], className='h-50 pb-2'),
+            # Carta informativa de la ID seleccionada S1
+            html.Div([
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.H4('Información de la barra', className='text-style m-0'),
+                    ], className='px-2 py-1'),
+                    dbc.CardBody([
+                        # get_card_info_layout(id, default)
+                        html.P("ID: ********", className='card-text text-left', id='card_info_id'),
+                    ], className='h-100'),
+                ], className='h-100')
+            ], className='h-50 pt-2')
+        ], className='h-100')
                 
 # Funcion que devuelve (aleatoriamente) las columnas que se desvian o tienen algun fallo
 def get_columns(df, seccion):
@@ -726,13 +747,18 @@ def get_signal_plot(df, column, id_data):
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font, "family": family_font,},
-        height=700,
-        margin={'t':30},
+        margin={'t':25, 'b': 45, 'l': 30, 'r': 15},
+        legend={
+            "orientation": "h",
+            "xanchor":"center",
+            "yanchor":"top",
+            "y":1.3, # play with it
+            "x":0.2 # play with it
+        },
         xaxis={
             "showline": True,
             "zeroline": False,
             "fixedrange": False,
-            "title": "Fecha",
             "ylabel": column,
         },
         yaxis={
@@ -742,7 +768,6 @@ def get_signal_plot(df, column, id_data):
             ],
             "showgrid": True,
             "showline": True,
-            # "fixedrange": True,
             "zeroline": False,
             "gridcolor": colors["grid"],
             "nticks": 10
@@ -753,10 +778,11 @@ def get_signal_plot(df, column, id_data):
 # Función que devuelve los traces y layout del histograma
 def get_histogram(df, column, id_data):
     # Datos historicos del histograma S1
+    df_hist = pd.DataFrame(df_raw).drop(df.index)
     trace = dict(
         type="histogram",
-        name='Historico',
-        x=df_raw[column],
+        name='Último año',
+        x=df_hist[column],
         nbins=10,
         bingroup=1,
         histnorm='percent',
@@ -773,7 +799,7 @@ def get_histogram(df, column, id_data):
     # Datos seleccionados con la id para el histograma S1
     trace2 = dict(
         type="histogram",
-        name='Actual',
+        name='Último mes',
         x=df[column],
         bingroup=1,
         nbins=10,
@@ -792,11 +818,20 @@ def get_histogram(df, column, id_data):
     # Layout del histograma S1
     layout=dict(
         barmode='overlay',
-        height=700,
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font, "family": family_font,},
-        margin={'t':30},
+        margin={'t':25, 'b': 45, 'l': 30, 'r': 15},
+        legend={
+            "orientation": "h",
+            "xanchor":"center",
+            "yanchor":"top",
+            "y":1.3, # play with it
+            "x":0.2 # play with it
+        },
+        yaxis={
+            "gridcolor": colors["grid"],
+        },
         shapes=[
             {
                 'type':"line",
@@ -917,19 +952,24 @@ def summary_tab_layout(tab, df, single):
     return html.Div([
         html.Div([
             html.Div([
-                dbc.Table(table, 
-                          striped=True, 
-                            # bordered=True, 
-                          responsive=True,
-                          hover=True,
-                          dark=True,
-                          className='table pt-2',
-                          style={"height": '90%'},
-                          id=f'summary-table-{tab}')
-            ], className='col-3 px-5 h-100'),
+                dbc.Card([
+                    dbc.CardHeader([html.H5('Resumen de {}'.format(tab), className='text-style')], className='px-2 pt-1 p-0'),
+                    dbc.CardBody([
+                        dbc.Table(table, 
+                                  striped=True, 
+                                    # bordered=True, 
+                                  responsive=True,
+                                  hover=True,
+                                  dark=True,
+                                  className='table text-style-table m-0',
+                                  style={"height": '100%'},
+                                  id=f'summary-table-{tab}')
+                    ], className='h-100 px-1 py-0'),
+                ], className='h-100'),
+            ], className='col-3 px-2 h-100'),
             html.Div([
                 dbc.Card([
-                    dbc.CardHeader([html.H5('Buenas vs. Malas')], className='px-2 pt-1 p-0'),
+                    dbc.CardHeader([html.H5('Buenas vs. Malas', className='text-style')], className='px-2 pt-1 p-0'),
                     dbc.CardBody([
                         dcc.Graph(
                             id=f'bar-plot-{tab}',
@@ -941,10 +981,10 @@ def summary_tab_layout(tab, df, single):
                         ),
                     ], className='py-1 px-2'),
                 ], className='h-100 w-100'),
-            ], className='col-4 px-5 h-100'),
+            ], className='col-4 px-1 h-100'),
             html.Div([
                 dbc.Card([
-                    dbc.CardHeader([html.H5(titulo_line_plot)], className='px-2 pt-1 p-0'),
+                    dbc.CardHeader([html.H5(titulo_line_plot, className='text-style')], className='px-2 pt-1 p-0'),
                     dbc.CardBody([
                         html.Div([
                             dcc.Graph(
@@ -957,12 +997,12 @@ def summary_tab_layout(tab, df, single):
                                 className='col-10'
                             ),
                             html.Div(pq_selector,className='col-2 pt-4 h-100'),
-                        ], className='row h-100')
-                    ], className='h-100 py-1 px-2')
+                        ], className='row h-100 w-100')
+                    ], className='h-100 py-1 px-1')
                 ], className='h-100')
-            ], className='col-5 pl-5 pr-2 h-100'),
+            ], className='col-5 pl-1 pr-1 h-100'),
             
-        ], className='row py-3 w-100', style={"height": '90%'})], className='py-3', style={"height": hcontainer})
+        ], className='row py-2 px-2 m-0 w-100', style={"height": '100%'})], className='py-3', style={"height": hcontainer})
 
 # Devuelve el gráfico de barras de barras buenas/malas en funcion de una o varias columnas
 def bar_graph_product_summary(df, column):
@@ -1326,33 +1366,50 @@ seccions_page_layout = html.Div([
         html.Div([
             # Listas de desviacion y fallos de resgistros/sensores
             html.Div(
-                list_columns_layout('s1')
-            , className='col-5 h-100', id='list_columns'),                
-            html.Div(className='col-2 h-100'),
+                dbc.Card([
+                    dbc.CardHeader([html.H5('Variables con desviación o errores', className='py-0 text-style')], className='px-2 pt-1 p-0'),
+                    dbc.CardBody([
+                        list_columns_layout
+                    ], className='h-100')
+                ], className='h-100')
+            , className='col-7 px-1 h-100', id='list_columns'),
             # Imagen
-            html.Img(src=app.get_asset_url(f"plant-s1.png"), id='seccion-img',\
-                     className='mx-auto d-block col-4 h-100'),
-            # html.Div(className='col-1'),
-        ], className='row w-100 h-50 pb-3'),
-        html.Br(),
-        # Plot señal + histograma
-        html.Div([                
-            # Plot señal S1
-            html.Div(
-                line_plot_layout('s1')               
-            ,className='signal-plot col-5 h-100'),
+            html.Div([
+                dbc.Card([
+                    dbc.CardHeader([html.H5('Diagram', className='py-0 text-style')], className='px-2 pt-1 p-0'),
+                    dbc.CardBody([
+                        html.Img(src=app.get_asset_url(f"plant-s1.jpg"), id='seccion-img',\
+                                 className='mx-auto d-block h-100 w-100'),
+                    ], className='h-100')
+                ], className='h-100')
+            ], className='h-100 col-5 px-1')
             
+            # html.Div(className='col-1'),
+        ], className='row w-100 h-50 pb-1'),
+        # Plot señal + histograma
+        html.Div([    
             #Dropdown + info card
             html.Div(
                 dropdown_cardinfo_layout('s1')
-            , className='col-2 text-center h-100', id='dropdown_card_info'),
+                # dbc.Card([
+                #     dbc.CardHeader([html.H5('Información + filtros', className='py-0 text-style')], className='px-2 pt-1 p-0'),
+                #     dbc.CardBody([
+                #         dropdown_cardinfo_layout('s1')
+                #     ], className='h-100 px-2 py-2'),
+                # ], className='h-100')
+            , className='col-2 h-100 px-1', id='dropdown_card_info'),      
+            
+            # Plot señal S1
+            html.Div(
+                line_plot_layout('s1')               
+            ,className='signal-plot col-5 h-100 px-1'),
             
             # Plot histograma S1
             html.Div(
                 histo_layout('s1')
-            ,className='histogram-plot col-5 h-100'),
-        ], id='graficos', className='row w-100 h-50 pt-2')
-    ], id='seccion-content', className='py-3 pl-4', style=dict(height='calc(100% - 40px)'))
+            ,className='histogram-plot col-5 h-100 px-1'),
+        ], id='graficos', className='row w-100 h-50 py-1')
+    ], id='seccion-content', className='py-1 pl-4', style=dict(height='calc(100% - 40px)'))
 ], className = 'h-100 w-100')
 
 #%%###########################################################################
@@ -1369,10 +1426,12 @@ def render_seccion_tab_content(active_tab):
     if active_tab == 's1':
         columns = [{'label': x, 'value': x} for x in columns_s1]
         default = 'Amina Flow'
+        img = 'plant-s1.jpg'
     else:
         columns = [{'label': x, 'value': x} for x in columns_s2]
         default = 'Flotation Column 02 Level' 
-    return [columns, default, app.get_asset_url(f"plant-{active_tab}.png")]
+        img = 'plant-s2.png'
+    return [columns, default, app.get_asset_url(img)]
 
 # Callback que actualiza la targeta de información de ID S1
 @app.callback(Output('card_info_id', 'children'),
