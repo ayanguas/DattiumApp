@@ -127,171 +127,244 @@ navbar_logo_size = "90%" # Navbar logo size
 #                       02_01. FUNCIONES (HOME PAGE)                         #
 ##############################################################################
 
-def get_home_tab_layout(tab):
-    if tab == 'real':
-        altertab = 'hist'
-        titulo = 'Tiempo Real'
-        filters = html.Div([
-            html.Div([
-                html.Div(className='col-11'),
-                dbc.Button("Pause", className='ml-auto', id="pause-button"),
-                # html.Div(className='col-1'),
-            ], className='row w-100 px-5 pb-1 h-100'), 
-        ], className='h-100')
-        # Interval, sirve para ir actualizando el gráfico cada GRAPH_INTERVAL ms
-        interval = dcc.Interval(
-                id="signal-update",
-                interval=int(GRAPH_INTERVAL),
-                n_intervals=0,
-            )
-        bottom_seccion = html.Div([bottom_seccion_real_layout], className='py-3 h-100')
-        plant_plot_graph_h = '88%'
-        plant_plot_filter_h = '12%'
-        
-    else:
-        altertab = 'real'
-        titulo = 'Historico'
-        date_min = datetime(2017, 4, 1, 1, 0, 0) #df_raw['date'].min()
-        date_max = datetime(2017, 5, 10, 1, 0, 0) # df_raw['date'].max()
-        filters = html.Div([
-            html.Div([
-                html.Div([
-                    html.H6('Fecha desde', className='col-4'),
-                    html.Div(className='col-1'),
-                    html.I(id="hour-min-up", n_clicks=0, 
-                           className="fas fa-caret-up fa-2x text-center col-2",
-                           style={"cursor": "pointer"}),
-                    html.Div(className='col-1'),
-                    html.I(id="min-min-up", n_clicks=0, 
-                           className="fas fa-caret-up fa-2x text-center col-2 pointer",
-                           style={"cursor": "pointer"}),
-                ], className='row'),
-                html.Div([
-                    dcc.DatePickerSingle(date=datetime.date(date_min), display_format='DD-MM-YYYY',
-                                         className='col-4 rounded-lg h-100 w-100 DateInput_1', persistence=True,
-                                         id='date-min'),
-                    html.Div(className='col-1'),
-                    dbc.Input(type='text', value="00", className='col-2 px-1 text-center', 
-                              style={"height":"inherit"},
-                               persistence=True,
-                              id='hour-min'),
-                    html.Div([
-                        html.P(':'),
-                    ], className='col-1', style={'fontSize': 22}),
-                    dbc.Input(type='text', value="00", className='col-2 px-1 text-center', 
-                               persistence=True,
-                              style={"height":"inherit",
-                                     "cursor": "pointer"}, 
-                              id='min-min'),
-                ], className='row'),
-                html.Div([
-                    html.H6('Fecha desde', className='col-4 invisible'),
-                    html.Div(className='col-1'),
-                    html.I(id="hour-min-down", n_clicks=0, 
-                           className="fas fa-caret-down fa-2x text-center col-2",
-                           style={"cursor": "pointer"}),
-                    html.Div(className='col-1'),
-                    html.I(id="min-min-down", n_clicks=0, 
-                           className="fas fa-caret-down fa-2x text-center col-2",
-                           style={"cursor": "pointer"}),
-                ], className='row'),
-            ], className='col-3'),
-            # html.Br(),
-            # html.Div(className='col-1'),º
-            html.Div([
-                html.Div([
-                    html.H6('Fecha hasta', className='col-4'),
-                    html.Div(className='col-1'),
-                    html.I(id="hour-max-up", n_clicks=0, 
-                           className="fas fa-caret-up fa-2x text-center col-2",
-                           style={"cursor": "pointer"}),
-                    html.Div(className='col-1'),
-                    html.I(id="min-max-up", n_clicks=0, 
-                           className="fas fa-caret-up fa-2x text-center col-2 pointer",
-                           style={"cursor": "pointer"}),
-                ], className='row'),
-                html.Div([
-                    dcc.DatePickerSingle(date=datetime.date(date_max), display_format='DD-MM-YYYY',
-                                         className='col-4 rounded-lg h-100 w-100', persistence=True,
-                                         id='date-max'),
-                    html.Div(className='col-1'),
-                    dbc.Input(type='text', value="00", className='col-2 px-1 text-center', 
-                              style={"height":"inherit"},
-                               persistence=True,
-                              id='hour-max'),
-                    html.Div([
-                        html.P(':'),
-                    ], className='col-1', style={'fontSize': 22}),
-                    dbc.Input(type='text', value="00", className='col-2 px-1 text-center', 
-                               persistence=True,
-                              style={"height":"inherit",
-                                     "cursor": "pointer"}, 
-                              id='min-max'),
-                ], className='row'),
-                html.Div([
-                    html.H6('Fecha desde', className='col-4 invisible'),
-                    html.Div(className='col-1'),
-                    html.I(id="hour-max-down", n_clicks=0, 
-                           className="fas fa-caret-down fa-2x text-center col-2",
-                           style={"cursor": "pointer"}),
-                    html.Div(className='col-1'),
-                    html.I(id="min-max-down", n_clicks=0, 
-                           className="fas fa-caret-down fa-2x text-center col-2",
-                           style={"cursor": "pointer"}),
-                ], className='row'),
-            ], className='col-3'),
-            html.Div([
-                html.I(className="fas fa-caret-up fa-2x text-center col-2 invisible"),
-                html.Div([
-                    dbc.Button([
-                        html.Div([
-                            html.P([
-                                html.I(className='fas fa-search h-100'),
-                                html.A('  BUSCAR', className='h-100'),
-                            ], className='h-100', style={"margin-bottom": 0,}),
-                        ], className='h-100 w-100 pt-2')
-                    ], className='col-6 px-1 py-1 btn-block h-100', id='search-button', n_clicks=0),
-                    dcc.DatePickerSingle(date=datetime.date(date_max), display_format='DD-MM-YYYY',
-                                         className='invisible h-100 col-1', persistence=True),
-                ], className='row h-50 pb-2'),
-                html.I(className="fas fa-caret-up fa-2x text-center col-2 invisible"),
-            ], className='col-2')
-        ], className="row w-100 px-1")
-        interval  = html.Div()
-        bottom_seccion = reports_page_layout1
-        plant_plot_graph_h = '66%'
-        plant_plot_filter_h = '34%'
-    # Content
-    content = html.Div([
-        # PLot of general view of plant
+date_min = datetime(2017, 4, 1, 1, 0, 0) #df_raw['date'].min()
+date_max = datetime(2017, 5, 10, 1, 0, 0) # df_raw['date'].max()
+
+# Selector  de fechas
+selector_fecha = html.Div([
         html.Div([
-            dbc.Card([
-                dbc.CardHeader([html.H5('Resumen del processo', className='py-0 text-style')], className='px-2 pt-1 p-0'),
-                dbc.CardBody([
-                    html.Div([
-                        html.Div(filters, id='filters-container', className='', style={"height": plant_plot_filter_h}),
-                        html.Div([
-                            dcc.Graph(
-                                id=f'plant-plot-{tab}',
-                                figure=dict(
-                                    layout=dict(
-                                        plot_bgcolor=colors["graph-bg"],
-                                        paper_bgcolor=colors["graph-bg"],
-                                    )
-                                ),
-                                className='h-100',
-                            ),
-                        ], className='px-2 pt-1', id='plant-plot-container', style=dict( height= plant_plot_graph_h))
-                    ], className='h-100')
-                ], className='py-2', style={"height": "85%"}),
-            ], className='h-100 w-100'),
-            html.Div([dcc.Graph(id=f'plant-plot-{altertab}')],className='invisible h-25'),
-            interval,
-        ], className='pb-3 px-4 pt-2 h-50'), 
+            html.Div([
+                html.H6('Fecha desde', className='col-4'),
+                html.Div(className='col-1'),
+                html.I(id="hour-min-up", n_clicks=0, n_clicks_timestamp = -1,
+                       className="fas fa-caret-up fa-2x text-center col-2",
+                       style={"cursor": "pointer"}),
+                html.Div(className='col-1'),
+                html.I(id="min-min-up", n_clicks=0, n_clicks_timestamp = -1,
+                       className="fas fa-caret-up fa-2x text-center col-2 pointer",
+                       style={"cursor": "pointer"}),
+            ], className='row'),
+            html.Div([
+                dcc.DatePickerSingle(date=datetime.date(date_min), display_format='DD-MM-YYYY',
+                                     className='col-4 rounded-lg h-100 w-100 DateInput_1', persistence=True,
+                                     id='date-min'),
+                html.Div(className='col-1'),
+                dbc.Input(type='text', value="00", className='col-2 px-1 text-center', 
+                          style={"height":"inherit"},
+                           persistence=True,
+                          id='hour-min'),
+                html.Div([
+                    html.P(':'),
+                ], className='col-1', style={'fontSize': 22}),
+                dbc.Input(type='text', value="00", className='col-2 px-1 text-center', 
+                           persistence=True,
+                          style={"height":"inherit",
+                                 "cursor": "pointer"}, 
+                          id='min-min'),
+            ], className='row'),
+            html.Div([
+                html.H6('Fecha desde', className='col-4 invisible'),
+                html.Div(className='col-1'),
+                html.I(id="hour-min-down", n_clicks=0, n_clicks_timestamp = -1,
+                       className="fas fa-caret-down fa-2x text-center col-2",
+                       style={"cursor": "pointer"}),
+                html.Div(className='col-1'),
+                html.I(id="min-min-down", n_clicks=0, n_clicks_timestamp = -1,
+                       className="fas fa-caret-down fa-2x text-center col-2",
+                       style={"cursor": "pointer"}),
+            ], className='row'),
+        ], className='col-3'),
         # html.Br(),
-        html.Div(bottom_seccion, id='hp-bottom-div', className='pt-3 w-100 h-50'),
-    ], className='h-100 w-100')   
-    return content
+        # html.Div(className='col-1'),º
+        html.Div([
+            html.Div([
+                html.H6('Fecha hasta', className='col-4'),
+                html.Div(className='col-1'),
+                html.I(id="hour-max-up", n_clicks=0, n_clicks_timestamp = -1,
+                       className="fas fa-caret-up fa-2x text-center col-2",
+                       style={"cursor": "pointer"}),
+                html.Div(className='col-1'),
+                html.I(id="min-max-up", n_clicks=0, n_clicks_timestamp = -1,
+                       className="fas fa-caret-up fa-2x text-center col-2 pointer",
+                       style={"cursor": "pointer"}),
+            ], className='row'),
+            html.Div([
+                dcc.DatePickerSingle(date=datetime.date(date_max), display_format='DD-MM-YYYY',
+                                     className='col-4 rounded-lg h-100 w-100', persistence=True,
+                                     id='date-max'),
+                html.Div(className='col-1'),
+                dbc.Input(type='text', value="00", className='col-2 px-1 text-center', 
+                          style={"height":"inherit"},
+                           persistence=True,
+                          id='hour-max'),
+                html.Div([
+                    html.P(':'),
+                ], className='col-1', style={'fontSize': 22}),
+                dbc.Input(type='text', value="00", className='col-2 px-1 text-center', 
+                           persistence=True,
+                          style={"height":"inherit",
+                                 "cursor": "pointer"}, 
+                          id='min-max'),
+            ], className='row'),
+            html.Div([
+                html.H6('Fecha desde', className='col-4 invisible'),
+                html.Div(className='col-1'),
+                html.I(id="hour-max-down", n_clicks=0, n_clicks_timestamp = -1,
+                       className="fas fa-caret-down fa-2x text-center col-2",
+                       style={"cursor": "pointer"}),
+                html.Div(className='col-1'),
+                html.I(id="min-max-down", n_clicks=0, n_clicks_timestamp = -1,
+                       className="fas fa-caret-down fa-2x text-center col-2",
+                       style={"cursor": "pointer"}),
+            ], className='row'),
+        ], className='col-3'),
+        html.Div([
+            html.I(className="fas fa-caret-up fa-2x text-center col-2 invisible"),
+            html.Div([
+                dbc.Button([
+                    html.Div([
+                        html.P([
+                            html.I(className='fas fa-search h-100'),
+                            html.A('  BUSCAR', className='h-100'),
+                        ], className='h-100', style={"margin-bottom": 0,}),
+                    ], className='h-100 w-100 pt-2')
+                ], className='col-6 px-1 py-1 btn-block h-100', id='search-button', n_clicks=0),
+                dcc.DatePickerSingle(date=datetime.date(date_max), display_format='DD-MM-YYYY',
+                                     className='invisible h-100 col-1', persistence=True),
+            ], className='row h-50 pb-2'),
+            html.I(className="fas fa-caret-up fa-2x text-center col-2 invisible"),
+        ], className='col-2')
+    ], className="row w-100 pl-4 pt-2")
+
+# Card content
+def chm_card_content(card):
+    data={
+        1: {
+            "first" : '% de efciencia en los últimos 30 días',
+            "second" : '97%',
+            "third" : '30 Mayo 2017 - 30 Junio 2017'
+        },
+        2: {
+            "first" : 'Racha actual de eficiencia',
+            "second" : '3 días',
+            "third" : '27 Junio 2017 - 30 Junio 2017'
+        },
+        3: {
+            "first" : 'Mayor racha de eficiencia',
+            "second" : '27 días',
+            "third" : '3 Mayo 2017 - 30 Mayo 2017'
+        },
+    }
+    return html.Div([
+        html.Div(data[card]['first'], style={"font-size": "0.8rem", "color": colors['text']}),
+        html.Div(data[card]['second'], style={"font-size": "3rem"}),
+        html.Div(data[card]['third'], style={"font-size": "0.8rem", "color": colors['text']}),
+    ], className='my-auto')
+
+
+
+# Calendar HeatMap Layout
+calendar_heatmap_layout = html.Div([
+    dbc.Card([
+        dbc.CardHeader([html.H5('Resumen por día', className='text-style')], className='px-2 pt-1 p-0'),
+        dbc.CardBody([
+            dcc.Graph(
+                id='calendar-heatmap',
+                figure=dict(
+                    layout=dict(
+                        plot_bgcolor=colors["graph-bg"],
+                        paper_bgcolor=colors["graph-bg"],
+                    )
+                ),
+                # figure=calendar_heatmap(df, seccion),
+                className = 'col-12',
+                style=dict(
+                    background=colors['graph-bg'],
+                    height='100%'
+                )
+            ),
+        ], className='h-100 w-100 py-1')
+    ], className='h-100 w-100')
+], className='px-3 row w-100 py-2 h-100 mx-0')
+
+# Calendar HeatMap Info Layout
+chm_info_layout = html.Div([
+    dbc.Card([
+        dbc.CardHeader([html.H5('Información general', className='text-style')], className='px-2 pt-1 p-0'),
+        dbc.CardBody([
+            html.Div([
+                dbc.Card([
+                    chm_card_content(1)
+                ], id='chm_info_card1', className='ml-4 col-3 bg-secondary text-center'),
+                html.Div(className='col-1'),
+                dbc.Card([
+                    chm_card_content(2)
+                ], id='chm_info_card2', className='h-100 col-3 bg-secondary text-center'),
+                html.Div(className='col-1'),
+                dbc.Card([
+                    chm_card_content(3)
+                ], id='chm_info_card3', className='h-100 col-3 bg-secondary text-center'),
+            ], className='row h-100 py-4 mx-auto')
+        ], className='h-100 w-100 py-1')
+    ], className='h-100 w-100')
+], className='px-3 row w-100 py-2 h-100 mx-0')
+
+# Bottom seccion real tab layout
+bottom_seccion_real_layout = html.Div([
+        dbc.Tabs([
+            dbc.Tab(label='General', tab_id='general'), 
+            dbc.Tab(label='Horno', tab_id='S1'),
+            dbc.Tab(label='Casetas', tab_id='S2'),
+        ], id='chm-tabs', active_tab='general'),
+        html.Div([
+            html.Div([calendar_heatmap_layout],id='chm-tab-content', className='col-6 px-2 h-100'),
+            html.Div([chm_info_layout], id='info-tab-content', className='col-6 px-2 h-100'),
+        ], className='row w-100 pt-1 mx-0', style=dict(height='calc(100% - 40px)'))
+    ], className='h-100 w-100') 
+
+# Filters
+filters = html.Div([
+    html.Div([
+        html.Div(className='col-11'),
+        dbc.Button("Pause", className='ml-auto', id="pause-button"),
+        # html.Div(className='col-1'),
+        html.Div(selector_fecha, style={"height":0, "visibility": "hidden"})
+    ], className='row w-100 px-5 pb-1 h-100'), 
+], className='h-100')
+
+home_layout = html.Div([
+    # PLot of general view of plant
+    html.Div([
+        dbc.Card([
+            dbc.CardHeader([html.H5('Resumen del processo', className='py-0 text-style')], className='px-2 pt-1 p-0'),
+            dbc.CardBody([
+                html.Div([
+                    html.Div([
+                        html.Div(selector_fecha, id='selector-fechas-container', style={"height":0, "visibility": "hidden"}),
+                        html.Div([
+                            html.Div(className='col-11'),
+                            dbc.Button("Pause", className='ml-auto', id="pause-button"),
+                        ], className='row w-100 pr-3 pb-1 h-100', id='button-container'),
+                    ], id='filters-container', style={"height": '12%'}),
+                    html.Div([
+                        dcc.Graph(
+                            id=f'plant-plot',
+                            figure=dict(
+                                layout=dict(
+                                    plot_bgcolor=colors["graph-bg"],
+                                    paper_bgcolor=colors["graph-bg"],
+                                )
+                            ),
+                            className='h-100',
+                        ),
+                    ], className='px-2 pt-1', id='plant-plot-container', style=dict( height= '88%'))
+                ], className='h-100')
+            ], className='py-2', style={"height": "85%"}),
+        ], className='h-100 w-100'),
+        # html.Div([dcc.Graph(id=f'plant-plot-{altertab}')],className='invisible', style={'height': 0}),
+    ], className='pb-3 px-4 pt-2 h-50'), 
+    html.Div(html.Div([bottom_seccion_real_layout], className='py-3 h-100'), id='hp-bottom-div', className='pt-3 w-100 h-50'),
+], className='h-100 w-100') 
 
 # Función que devuelve el trace y layout de plant-plot
 def get_plant_plot(df):
@@ -388,8 +461,8 @@ def get_plant_plot(df):
     )
     return trace, layout
 
-def return_weeknumber(date):
-    return date.strftime("%Gww%V")
+def return_weeknumber(fecha):
+    return fecha.strftime("%Gww%V")
 
 # Calendar HeatMap  Figure Layout and Traces
 def calendar_heatmap(df, seccion):
@@ -406,7 +479,7 @@ def calendar_heatmap(df, seccion):
         z_min = 0
         z_max = 6
         
-    df['day'] = [datetime.date(date) for date in df['date']]
+    df['day'] = [datetime.date(fecha) for fecha in df['date']]
     
     d1 = datetime.date(df['date'].min())
     d2 = datetime.date(df['date'].max())
@@ -427,9 +500,9 @@ def calendar_heatmap(df, seccion):
         if month > 12:
             month=1
             year+=1
-        date = datetime(year, month, 1)
-        xtickvals = np.append(xtickvals, date.strftime("%Gww%V"))
-        xticktext = np.append(xticktext, date.strftime("%b"))
+        fecha = datetime(year, month, 1)
+        xtickvals = np.append(xtickvals, fecha.strftime("%Gww%V"))
+        xticktext = np.append(xticktext, fecha.strftime("%b"))
         month += 1
     
     trace = dict(
@@ -468,89 +541,6 @@ def calendar_heatmap(df, seccion):
     )
     return dict(data=[trace], layout=layout)
 
-# Card content
-def chm_card_content(card):
-    data={
-        1: {
-            "first" : '% de efciencia en los últimos 30 días',
-            "second" : '97%',
-            "third" : '30 Mayo 2017 - 30 Junio 2017'
-        },
-        2: {
-            "first" : 'Racha actual de eficiencia',
-            "second" : '3 días',
-            "third" : '27 Junio 2017 - 30 Junio 2017'
-        },
-        3: {
-            "first" : 'Mayor racha de eficiencia',
-            "second" : '27 días',
-            "third" : '3 Mayo 2017 - 30 Mayo 2017'
-        },
-    }
-    return html.Div([
-        html.Div(data[card]['first'], style={"font-size": "0.8rem", "color": colors['text']}),
-        html.Div(data[card]['second'], style={"font-size": "3rem"}),
-        html.Div(data[card]['third'], style={"font-size": "0.8rem", "color": colors['text']}),
-    ], className='my-auto')
-
-# Calendar HeatMap Layout
-calendar_heatmap_layout = html.Div([
-    dbc.Card([
-        dbc.CardHeader([html.H5('Resumen por día', className='text-style')], className='px-2 pt-1 p-0'),
-        dbc.CardBody([
-            dcc.Graph(
-                id='calendar-heatmap',
-                figure=dict(
-                    layout=dict(
-                        plot_bgcolor=colors["graph-bg"],
-                        paper_bgcolor=colors["graph-bg"],
-                    )
-                ),
-                # figure=calendar_heatmap(df, seccion),
-                className = 'col-12',
-                style=dict(
-                    background=colors['graph-bg'],
-                    height='100%'
-                )
-            ),
-        ], className='h-100 w-100 py-1')
-    ], className='h-100 w-100')
-], className='px-3 row w-100 py-2 h-100 mx-0')
-
-# Calendar HeatMap Info Layout
-chm_info_layout = html.Div([
-    dbc.Card([
-        dbc.CardHeader([html.H5('Información general', className='text-style')], className='px-2 pt-1 p-0'),
-        dbc.CardBody([
-            html.Div([
-                dbc.Card([
-                    chm_card_content(1)
-                ], id='chm_info_card1', className='ml-4 col-3 bg-secondary text-center'),
-                html.Div(className='col-1'),
-                dbc.Card([
-                    chm_card_content(2)
-                ], id='chm_info_card2', className='h-100 col-3 bg-secondary text-center'),
-                html.Div(className='col-1'),
-                dbc.Card([
-                    chm_card_content(3)
-                ], id='chm_info_card3', className='h-100 col-3 bg-secondary text-center'),
-            ], className='row h-100 py-4 mx-auto')
-        ], className='h-100 w-100 py-1')
-    ], className='h-100 w-100')
-], className='px-3 row w-100 py-2 h-100 mx-0')
-
-# Bottom seccion real tab layout
-bottom_seccion_real_layout = html.Div([
-        dbc.Tabs([
-            dbc.Tab(label='General', tab_id='general'), 
-            dbc.Tab(label='Horno', tab_id='S1'),
-            dbc.Tab(label='Casetas', tab_id='S2'),
-        ], id='chm-tabs', active_tab='general'),
-        html.Div([
-            html.Div([calendar_heatmap_layout],id='chm-tab-content', className='col-6 px-2 h-100'),
-            html.Div([chm_info_layout], id='info-tab-content', className='col-6 px-2 h-100'),
-        ], className='row w-100 pt-1 mx-0', style=dict(height='calc(100% - 40px)'))
-    ], className='h-100 w-100') 
 
 #%%###########################################################################
 #                     02_02. FUNCIONES (SECCION PAGE)                        #
@@ -913,7 +903,7 @@ def summary_tab_layout(tab, df, single):
         data_bar, layout_bar = bar_graph_product_summary(df, 'product')
         titulo_line_plot = 'Buenas por producto/calidad/mes'
         data_line, layout_line = liner_graph_product_summary(df, df['product'].unique(),\
-                                                df['quality'].unique())    
+                                                df['quality'].unique(), 'month')    
         pq_selector = [
             dbc.FormGroup([
                 dbc.Checklist(
@@ -930,6 +920,14 @@ def summary_tab_layout(tab, df, single):
                     value=df['quality'].unique(),
                     id="checklist-quality",
                     switch=True,
+                ),
+            ]),
+            dbc.FormGroup([
+                dbc.RadioItems(
+                    options=[{"label": "Month", "value": "month"}, 
+                             {"label": "Day", "value": "day"}],                
+                    value="month",
+                    id="checklist-xaxis",
                 ),
             ]),
         ]
@@ -1002,7 +1000,7 @@ def summary_tab_layout(tab, df, single):
                 ], className='h-100')
             ], className='col-5 pl-1 pr-1 h-100'),
             
-        ], className='row py-2 px-2 m-0 w-100', style={"height": '100%'})], className='py-3', style={"height": hcontainer})
+        ], className='row py-1 px-2 m-0 w-100', style={"height": '100%'})], className='pt-1', style={"height": hcontainer})
 
 # Devuelve el gráfico de barras de barras buenas/malas en funcion de una o varias columnas
 def bar_graph_product_summary(df, column):
@@ -1039,10 +1037,16 @@ def bar_graph_product_summary(df, column):
     
     return [trace, trace2], layout
 
-def liner_graph_product_summary(df, product, quality):
-    df['month'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
-    todas = df[(df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('month').count()['id']
-    buenas = df[(df['label']>=4) & (df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('month').count()['id']
+def liner_graph_product_summary(df, product, quality, xaxis):
+    if xaxis == 'month':
+        df['month'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
+        todas = df[(df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('month').count()['id']
+        buenas = df[(df['label']>=4) & (df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('month').count()['id']
+    else:
+        df['date_notime'] = df['date'].apply(lambda x: x.date())
+        todas = df[(df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('date_notime').count()['id']
+        buenas = df[(df['label']>=4) & (df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('date_notime').count()['id']
+        
     trace = dict(
         type='line',
         x = todas.index,
@@ -1062,6 +1066,7 @@ def liner_graph_product_summary(df, product, quality):
 # Devuelve el gráfico de barras de barras buenas/malas por seccion
 def bar_graph_seccions_summary(df):
     secciones = [1 ,2, 3]
+    name_secciones = ['Horno', 'Casetas', 'Tren']
     todas = []
     buenas = []
     malas = []
@@ -1075,7 +1080,7 @@ def bar_graph_seccions_summary(df):
     trace = dict(
         type='bar',
         name='Buenas',
-        x = [f'Seccion {seccion}' for seccion in secciones],
+        x = [f'{seccion}' for seccion in name_secciones],
         y = ((buenas/todas)*100),
         marker = dict(
             color = colors['plantplot-mk-green'], 
@@ -1084,7 +1089,7 @@ def bar_graph_seccions_summary(df):
     trace2 = dict(
         type='bar',
         name='Anomalías',
-        x = [f'Seccion {seccion}' for seccion in secciones],
+        x = [f'{seccion}' for seccion in name_secciones],
         y = ((malas/todas)*100),
         marker = dict(
             color = colors['plantplot-mk-red'], 
@@ -1093,7 +1098,7 @@ def bar_graph_seccions_summary(df):
     trace3 = dict(
         type='bar',
         name='Desviaciones',
-        x = [f'Seccion {seccion}' for seccion in secciones],
+        x = [f'{seccion}' for seccion in name_secciones],
         y = ((desviadas/todas)*100),
         marker = dict(
             color = colors['stacked-bar-yellow'], 
@@ -1134,11 +1139,25 @@ def liner_graph_seccions_summary(df, seccion):
 
 reports_page_layout1 = html.Div([
         dbc.Tabs([
+            dbc.Tab(label='Resumen', tab_id='all'),
+        ], id='summary-tabs', active_tab='all', className='Tabs1 invisible', style=dict(height='0')),
+        html.Div([
+            dbc.Card([
+                dbc.CardHeader([html.H5('Selector de fechas', className='py-0 text-style')], className='px-2 pt-1 p-0'),
+                dbc.CardBody([
+                    selector_fecha
+                ], className='h-100 pb-2'),
+            ], className='h-100')
+        ], className='px-3 pt-2', style={"height": "22%"}),
+        html.Div(id='summary-tab-content', style=dict(height='78%'))
+    ], className='h-100') 
+
+reports_page_layout2 = html.Div([
+        dbc.Tabs([
             dbc.Tab(label='Resumen por producto', tab_id='products'), 
             dbc.Tab(label='Resumen por seccion', tab_id='seccions'),
-            dbc.Tab(label='Resumen', tab_id='all'),
         ], id='summary-tabs', active_tab='products', className='Tabs1'),
-        html.Div(id='summary-tab-content', style=dict(height='calc(100% - 40px)'))
+        html.Div([], id='summary-tab-content', style=dict(height='calc(100% - 40px)'))
     ], className='h-100') 
 
 #%%###########################################################################
@@ -1166,6 +1185,8 @@ app.layout = html.Div([
     # Store, sirve para guardar datos y poder acceder a ellos entre paginas
     dcc.Store(id='store-p2-layout'),
     dcc.Store(id='store-id-clicked'),
+    dcc.Store(id='store-update-signal'),
+    dcc.Store(id='n_clicks_update'),
     # Sirve para poder crear distintas paginas www.dattiumapp.com/seccions o www.dattiumapp.com/reports
     dcc.Location(id='url', refresh=False),
     navbar,
@@ -1202,7 +1223,12 @@ home_page_layout = html.Div([
         dbc.Tab(label='Tiempo Real', tab_id='real'),
         dbc.Tab(label='Historico', tab_id='hist'),
     ], id='home-page-tabs'), 
-    html.Div(id='home-page-content', style={"height": "calc(100% - 40px)"}),
+    html.Div(home_layout, id='home-page-content', style={"height": "calc(100% - 40px)"}),
+    dcc.Interval(
+        id="signal-update",
+        interval=int(GRAPH_INTERVAL),
+        n_intervals=0,
+    ),
 ], className='h-100')
 
 #%%###########################################################################
@@ -1211,73 +1237,100 @@ home_page_layout = html.Div([
 
 # Callback que modifica el contenido de la página en función del Tab activo.
 @app.callback(
-    Output("home-page-content", "children"),
+    [Output('selector-fechas-container', 'style'), Output('button-container', 'style'), 
+     Output('hp-bottom-div', 'children'), Output('plant-plot-container', 'style'), 
+     Output('filters-container', 'style')],
     [Input("home-page-tabs", "active_tab")],
 )
-def render_tab_content(active_tab):    
-    if active_tab == "real":
-        return get_home_tab_layout('real')
-    elif active_tab == "hist":
-        return get_home_tab_layout('hist')
-
-# Callback que pausa la actualización automática del gráfico
-@app.callback(
-    [Output("signal-update", "disabled"), Output("pause-button", "children")], 
-    [Input("pause-button", "n_clicks")],
-    [State("signal-update", "disabled")]
-)
-def enable_update(n, disabled):
-    children = "Play"
-    if n is not None:
-        if disabled:
-            children="Pause"
-        return (not disabled), children
+def render_tab_content(tab):
+    if tab == 'hist':
+        fechas = dict(height='100%', visibility='visible')
+        button = dict(height='0%', visibility='hidden')
+        bottom_seccion = reports_page_layout2
+        plant_plot_graph_h = dict(height='66%')
+        plant_plot_filter_h = dict(height='34%')
+    else:
+        button = dict(height='100%', visibility='visible')
+        fechas = dict(height='0%', visibility='hidden')
+        bottom_seccion = html.Div([bottom_seccion_real_layout], className='py-3 h-100')
+        plant_plot_graph_h = dict(height='88%')
+        plant_plot_filter_h = dict(height='12%')
+    return fechas, button, bottom_seccion, plant_plot_graph_h, plant_plot_filter_h
 
 # Callback que actualiza el gráfica cada X segundos o rango de fechas
 @app.callback(
-    [Output("plant-plot-real", "figure")], 
-    [Input("signal-update", "n_intervals")]
-)
-def gen_signal_real(interval):
-    """
-    Generate the signal graph.
-    :params interval: update the graph based on an interval
-    """ 
-
-    # Consulta a postgreSQL que devuelve las 100 primeras filas con un offset que incrementa cada GRAPH_INTERVALS ms
-    df = pd.read_sql(('SELECT * FROM signals LIMIT 100 OFFSET %s' % (interval)), server_conn)
-    
-    trace, layout = get_plant_plot(df)
-
-    return [dict(data=[trace], layout=layout)]
-
-# Callback que actualiza el gráfica cada X segundos o rango de fechas
-@app.callback(
-    [Output("plant-plot-hist", "figure")], 
-    [Input("search-button", "n_clicks")],
+    [Output("plant-plot", "figure")], 
+    [Input("search-button", "n_clicks"), Input("signal-update", "n_intervals"), Input("home-page-tabs", "active_tab")],
     [State("date-min", "date"), State("date-max", "date"), State('hour-min', 'value'),
      State('hour-max', 'value'), State('min-min', 'value'), State('min-max', 'value')]
 )
-def gen_signal_hist(n_clicks, datemin, datemax, hourmin, hourmax, minmin, minmax):
+def gen_signal_hist(n_clicks, interval, tab, datemin, datemax, hourmin, hourmax, minmin, minmax):
     """
     Generate the signal graph.
     :params datemin: update the graph based on a date interval
     :params datemax: update the graph based on a date interval
     """  
-    datemin = "'" + datemin + " " + str(hourmin).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
-    datemax = "'" + datemax + " " + str(hourmax).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
-    # Consulta a postgreSQL que devuelve
-    df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)                 
-
-    trace, layout = get_plant_plot(df)
+    
+    if tab == "hist":
+        datemin = "'" + datemin + " " + str(hourmin).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
+        datemax = "'" + datemax + " " + str(hourmax).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
+        # Consulta a postgreSQL que devuelve
+        df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)
+        trace, layout = get_plant_plot(df)
+        
+    else:
+        # Consulta a postgreSQL que devuelve las 100 primeras filas con un offset que incrementa cada GRAPH_INTERVALS ms
+        df = pd.read_sql(('SELECT * FROM signals LIMIT 100 OFFSET %s' % (interval)), server_conn)
+        trace, layout = get_plant_plot(df)
 
     return [dict(data=[trace], layout=layout)]
+
+# Callback que pausa la actualización automática del gráfico
+@app.callback(
+    [Output("signal-update", "disabled"), Output("pause-button", "children"), Output('store-update-signal', 'data'), Output('n_clicks_update', 'data')], 
+    [Input("pause-button", "n_clicks"), Input("home-page-tabs", "active_tab")],
+    [State("signal-update", "disabled"), State('store-update-signal', 'data'), State('n_clicks_update', 'data')]
+)
+def enable_update(n, tab, disabled, store, n_clicks):
+    if n is None:
+        n = 0
+    # actual_disabled=True
+    # children = 'Play'
+    if disabled is None:
+        disabled = True
+    if store is None:
+        store = disabled
+    if n_clicks is None:
+        n_clicks = -1
+    if tab == 'hist':
+        actual_disabled = True
+        children = "Play"
+    else:
+        if n_clicks == n:
+            if store:
+                children="Play"
+                actual_disabled = True
+                disabled = actual_disabled
+            else:
+                children="Pause"
+                actual_disabled = False
+                disabled = actual_disabled
+        else:
+            if disabled:
+                children="Pause"
+                actual_disabled = False
+                disabled = actual_disabled
+            else: 
+                children="Play"
+                actual_disabled = True
+                disabled = actual_disabled
+    return actual_disabled, children, disabled, n
 
 # Callback al clicar en un punto del gráfico, guarda en los Store el id del punto y el layout de las señales
 # que se van a mostrar como desviaciones/fallos
 @app.callback([Output('store-p2-layout', 'data'), Output('url', 'pathname'), Output('store-id-clicked', 'data')],
-              [Input('plant-plot-real', 'clickData'), Input('plant-plot-hist', 'clickData')])
-def change_page(click_data, click_data_hist):
+              [Input('plant-plot', 'clickData')])
+def change_page(click_data):
     des_s1 =  dbc.ListGroupItem("No hay ningúna señal desviada", id="desviacion-s1-item", className='text-center')
     des_s2 =  dbc.ListGroupItem("No hay ningúna señal desviada", id="desviacion-s2-item", className='text-center')
     fal_s1 =  dbc.ListGroupItem("No hay ningúna señal con fallos de registro/sensor", id="fallos-s1-item", className='text-center')
@@ -1287,17 +1340,6 @@ def change_page(click_data, click_data_hist):
         if 'points' in click_data.keys():
             if 'id' in click_data['points'][0].keys():
                 point_id = click_data['points'][0]['id']
-                selected_data = pd.read_sql(('SELECT * FROM signals WHERE id=%s' % (point_id)), server_conn)
-                [col_fal_s1, col_des_s1] = get_columns(selected_data, 's1')
-                [col_fal_s2, col_des_s2] = get_columns(selected_data, 's2')
-                des_s1 = get_cards_layout(col_des_s1, True, selected_data)
-                fal_s1 = get_cards_layout(col_fal_s1, False, selected_data)
-                des_s2 = get_cards_layout(col_des_s2, True, selected_data)
-                fal_s2 = get_cards_layout(col_fal_s2, False, selected_data)
-    if (click_data is None) and (click_data_hist is not None):
-        if 'points' in click_data_hist.keys():
-            if 'id' in click_data_hist['points'][0].keys():
-                point_id = click_data_hist['points'][0]['id']
                 selected_data = pd.read_sql(('SELECT * FROM signals WHERE id=%s' % (point_id)), server_conn)
                 [col_fal_s1, col_des_s1] = get_columns(selected_data, 's1')
                 [col_fal_s2, col_des_s2] = get_columns(selected_data, 's2')
@@ -1322,8 +1364,8 @@ def render_chm_tab_content(active_tab):
      Input("hour-min-down", "n_clicks_timestamp"), Input("min-min-down", "n_clicks_timestamp")],
     [State("date-min", "date"), State("hour-min", "value"), State("min-min", "value")]
 )
-def update_date_min(hour_up, min_up, hour_down, min_down, date, hour, minute):
-    date_out = datetime.strptime(date + " " + str(hour).zfill(2) + ":"+ str(minute).zfill(2),
+def update_date_min(hour_up, min_up, hour_down, min_down, fecha, hour, minute):
+    date_out = datetime.strptime(fecha + " " + str(hour).zfill(2) + ":"+ str(minute).zfill(2),
                                  '%Y-%m-%d %H:%M')
     values = {0:[1,0], 1:[0,1], 2:[-1,0], 3:[0,-1]}
     maximo = np.argmax([hour_up, min_up, hour_down, min_down])
@@ -1336,8 +1378,8 @@ def update_date_min(hour_up, min_up, hour_down, min_down, date, hour, minute):
      Input("hour-max-down", "n_clicks_timestamp"), Input("max-max-down", "n_clicks_timestamp")],
     [State("date-max", "date"), State("hour-max", "value"), State("max-max", "value")]
 )
-def update_date_max(hour_up, min_up, hour_down, min_down, date, hour, minute):
-    date_out = datetime.strptime(date + " " + str(hour).zfill(2) + ":"+ str(minute).zfill(2),
+def update_date_max(hour_up, min_up, hour_down, min_down, fecha, hour, minute):
+    date_out = datetime.strptime(fecha + " " + str(hour).zfill(2) + ":"+ str(minute).zfill(2),
                                  '%Y-%m-%d %H:%M')
     values = {0:[1,0], 1:[0,1], 2:[-1,0], 3:[0,-1]}
     maximo = np.argmax([hour_up, min_up, hour_down, min_down])
@@ -1503,50 +1545,11 @@ def gen_signal_s1(column, active_tab, id_data):
 #%%###########################################################################
 #                           06_1. REPORTS-PAGE                               #
 ##############################################################################
-filters = html.Div([
-    # html.Div(className='col-1'),
-    # html.H4('Filtros'),
-    # html.Br(),
-    html.Div([
-        html.H5('Fecha de inicio'),
-        html.Div([
-            dcc.DatePickerSingle(date=date(2016, 3, 1), display_format='DD-MM-YYYY', \
-                                 className='col-4 rounded-lg', id='date-min'),
-            dcc.Input(type='number', min=0, max=23, value=0, className='col-2 rounded-lg', id='hour-min'),
-            html.Div([
-                html.P(':'),
-            ], className='col-1', style={'fontSize': 22}),
-            dcc.Input(type='number', min=0, max=59, value=0, className='col-2 rounded-lg', id='min-min'),
-        ], className='row'),
-    ], className='col-3'),
-    # html.Br(),
-    # html.Div(className='col-1'),º
-    html.Div([
-        html.H5('Fecha final'),
-        html.Div([
-            dcc.DatePickerSingle(date=date(2020, 3, 20), display_format='DD-MM-YYYY', \
-                                 className='col-4 rounded-lg', id='date-max'),
-            dcc.Input(type='number', min=0, max=23, value=0, className='col-2 rounded-lg', id='hour-max'),
-            html.Div([
-                html.P(':'),
-            ], className='col-1', style={'fontSize': 22}),
-            dcc.Input(type='number', min=0, max=59, value=0, className='col-2 rounded-lg', id='min-max'),
-        ], className='row'),
-    ], className='col-3'),
-    dbc.Button([
-        html.Div([
-            html.P([
-                html.I(className='fas fa-search h-100'),
-                html.A('  BUSCAR', className='h-100'),
-            ], className='h-100', style={"margin-bottom": 0,}),
-        ], className='h-100 w-100 pt-2')
-    ], className='col-6 px-1 py-1 btn-block h-100', id='search-button'),
-], className="row w-100 px-5 invisible", style={"height": "0px"})
+
 # Página con los informes por seccion y producto
 reports_page_layout = html.Div([
-    filters,
     reports_page_layout1,
-    ], className='h-100') 
+], className='h-100') 
 
 #%%###########################################################################
 #                      06_2. REPORTS-PAGE CALLBACKS                          #
@@ -1577,18 +1580,18 @@ def render_summary_tab_content(active_tab, n_clicks, datemin, datemax, hourmin, 
 @app.callback(
     Output("time-plot-products", "figure"),
     [Input("checklist-product", "value"), Input("checklist-quality", "value"), 
-     Input("search-button", "n_clicks")],
+     Input("search-button", "n_clicks"), Input("checklist-xaxis", "value")],
     [State("date-min", "date"), State("date-max", "date"), State('hour-min', 'value'),
      State('hour-max', 'value'), State('min-min', 'value'), State('min-max', 'value')],
 )
-def checklist_product_trace(ckd_product, ckd_quality, n_clicks, datemin, datemax, hourmin, hourmax, minmin, minmax):
+def checklist_product_trace(ckd_product, ckd_quality, n_clicks, xaxis, datemin, datemax, hourmin, hourmax, minmin, minmax):
     
     datemin = "'" + datemin + " " + str(hourmin).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
     datemax = "'" + datemax + " " + str(hourmax).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
     # Consulta a postgreSQL que devuelve
     df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)  
     
-    trace, layout = liner_graph_product_summary(df, ckd_product, ckd_quality)
+    trace, layout = liner_graph_product_summary(df, ckd_product, ckd_quality, xaxis)
     return dict(data=[trace], layout=layout)
 
 @app.callback(
