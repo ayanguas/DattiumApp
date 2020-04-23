@@ -1244,7 +1244,8 @@ home_page_layout = html.Div([
 @app.callback(
     [Output('selector-fechas-container', 'style'), Output('button-container', 'style'), 
      Output('bottom_seccion_hist', 'style'), Output('bottom_seccion_real', 'style'),
-     Output('plant-plot-container', 'style'), Output('filters-container', 'style')],
+     Output('plant-plot-container', 'style'), Output('filters-container', 'style'),
+     Output("home-page-tabs", "value")],
     [Input("home-page-tabs", "active_tab"), Input('calendar-heatmap', 'clickData')],
 )
 def render_tab_content(tab, clicked):
@@ -1257,6 +1258,7 @@ def render_tab_content(tab, clicked):
         bottom_seccion_hist =  dict(height='100%', visibility='visible')
         plant_plot_graph_h = dict(height='66%')
         plant_plot_filter_h = dict(height='34%')
+        active_tab = 'hist'
     else:
         button = dict(height='100%', visibility='visible')
         fechas = dict(height='0%', visibility='hidden')
@@ -1264,7 +1266,8 @@ def render_tab_content(tab, clicked):
         bottom_seccion_hist =  dict(height='0%', visibility='hidden')
         plant_plot_graph_h = dict(height='88%')
         plant_plot_filter_h = dict(height='12%')
-    return fechas, button, bottom_seccion_hist, bottom_seccion_real, plant_plot_graph_h, plant_plot_filter_h
+        active_tab = 'real'
+    return fechas, button, bottom_seccion_hist, bottom_seccion_real, plant_plot_graph_h, plant_plot_filter_h, active_tab
 
 # Callback que actualiza el gráfica cada X segundos o rango de fechas
 @app.callback(
@@ -1376,7 +1379,7 @@ def render_chm_tab_content(active_tab):
      Input("hour-max-down", "n_clicks_timestamp"), Input("min-max-down", "n_clicks_timestamp"),
      Input('calendar-heatmap', 'clickData')],
     [State("date-min", "date"), State("hour-min", "value"), State("min-min", "value"),
-     State("date-max", "date"), State("hour-max", "value"), State("min-max", "value")]
+     State("date-max", "date"), State("hour-max", "value"), State("min-max", "value"),]
 )
 def update_date_min(hour_up_min, min_up_min, hour_down_min, min_down_min,
                     hour_up_max, min_up_max, hour_down_max, min_down_max,
