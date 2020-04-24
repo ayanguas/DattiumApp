@@ -72,6 +72,7 @@ server = app.server
 if dark:
     graph_bg = '#303030'#272B30'
     text_color = '#AAAA9F'
+    text_highlight = '#CCCCC0'
     pp_bg_green = '#356437'
     pp_bg_red = '#653434'
     pp_mk_green = '#59C159'
@@ -81,7 +82,8 @@ if dark:
     chm_fail = '#e04f38'
 else:
     graph_bg = ''
-    text_color = ''
+    text_color = '262626'
+    text_highlight = '0d0d0d'
     pp_bg_green = '#F7FAF0'
     pp_bg_red = '#F9E9E0'
     pp_mk_green = '#76B7B2'
@@ -95,6 +97,7 @@ colors = {
     'title-bg': '#444444',
     'graph-bg': graph_bg,
     'text': text_color,
+    'text-highlight': text_highlight,
     'text-dropdown': '#3A3A3A',
     'plantplot-bg-green': pp_bg_green, # Plantplot Background Green
     'plantplot-bg-red': pp_bg_red, # Plantplot Background Red
@@ -256,9 +259,9 @@ def chm_card_content(card):
         },
     }
     return html.Div([
-        html.Div(data[card]['first'], style={"font-size": "0.8rem", "color": colors['text']}),
+        html.Div(data[card]['first'], style={"font-size": "1rem", "color": colors['text']}),
         html.Div(data[card]['second'], style={"font-size": "3rem"}),
-        html.Div(data[card]['third'], style={"font-size": "0.8rem", "color": colors['text']}),
+        html.Div(data[card]['third'], style={"font-size": "1rem", "color": colors['text']}),
     ], className='my-auto')
 
 
@@ -285,7 +288,7 @@ calendar_heatmap_layout = html.Div([
             ),
         ], className='h-100 w-100 py-1')
     ], className='h-100 w-100')
-], className='px-3 row w-100 py-2 h-100 mx-0')
+], className='row w-100 py-2 h-100 mx-0')
 
 # Calendar HeatMap Info Layout
 chm_info_layout = html.Div([
@@ -307,7 +310,7 @@ chm_info_layout = html.Div([
             ], className='row h-100 py-4 mx-auto')
         ], className='h-100 w-100 py-1')
     ], className='h-100 w-100')
-], className='px-3 row w-100 py-2 h-100 mx-0')
+], className='row w-100 py-2 h-100 mx-0')
 
 # Bottom seccion real tab layout
 bottom_seccion_real_layout = html.Div([
@@ -317,8 +320,8 @@ bottom_seccion_real_layout = html.Div([
             dbc.Tab(label='Casetas', tab_id='S2'),
         ], id='chm-tabs', active_tab='general'),
         html.Div([
-            html.Div([calendar_heatmap_layout],id='chm-tab-content', className='col-6 px-2 h-100'),
-            html.Div([chm_info_layout], id='info-tab-content', className='col-6 px-2 h-100'),
+            html.Div([calendar_heatmap_layout],id='chm-tab-content', className='col-6 pl-3 pr-1 h-100'),
+            html.Div([chm_info_layout], id='info-tab-content', className='col-6 pr-3 pl-1 h-100'),
         ], className='row w-100 pt-1 mx-0', style=dict(height='calc(100% - 40px)'))
     ], className='h-100 w-100 py-3') 
 
@@ -689,7 +692,7 @@ def get_cards_layout(columns, desviaciones, df):
         i = 1
         for column in columns:
             value = df[column][0]
-            children.append(dbc.ListGroupItem(column + f' ({value:.2f})', className='text-center', \
+            children.append(dbc.ListGroupItem([column, html.B(f' ({value:.2f})', style={"color": colors['text-highlight']})], className='text-center', \
                                               style={"color": colors['text'], "font-size": size_font_cards, \
                                                      "font-family": family_font,}, \
                                                   id='list-item-{}'.format(i)))
@@ -913,7 +916,8 @@ def summary_tab_layout(tab, df, single):
     if tab == 'products':
         table = product_summary_table(df)
         data_bar, layout_bar = bar_graph_product_summary(df, 'product')
-        titulo_line_plot = 'Buenas por producto/calidad/mes'
+        titulo_bar_plot = 'Evaluación Anomalias por producto'
+        titulo_line_plot = 'Estabilidad temporal del proceso por producto'
         data_line, layout_line = liner_graph_product_summary(df, df['product'].unique(),\
                                                 df['quality'].unique(), 'month')    
         pq_selector = [
@@ -946,7 +950,8 @@ def summary_tab_layout(tab, df, single):
     else:
         table = seccion_summary_table(df)
         data_bar, layout_bar = bar_graph_seccions_summary(df)
-        titulo_line_plot = 'Buenas por seccion/mes'
+        titulo_bar_plot = 'Evaluación Anomalias por seccion'
+        titulo_line_plot = 'Estabilidad temporal del proceso por seccion'
         data_line, layout_line = liner_graph_seccions_summary(df, '1')
         pq_selector = [
             dbc.FormGroup([
@@ -979,7 +984,7 @@ def summary_tab_layout(tab, df, single):
             ], className='col-3 px-2 h-100'),
             html.Div([
                 dbc.Card([
-                    dbc.CardHeader([html.H5('Buenas vs. Malas', className='text-style')], className='px-2 pt-1 p-0'),
+                    dbc.CardHeader([html.H5(titulo_bar_plot, className='text-style')], className='px-2 pt-1 p-0'),
                     dbc.CardBody([
                         dcc.Graph(
                             id=f'bar-plot-{tab}',
@@ -1072,6 +1077,9 @@ def liner_graph_product_summary(df, product, quality, xaxis):
         xaxis={
             "tickangle": 30,
         },
+        yaxis={
+            "range": [50,100]    
+        },
     )
     return trace, layout
 
@@ -1145,6 +1153,9 @@ def liner_graph_seccions_summary(df, seccion):
         margin={"t":30},
         xaxis={
             "tickangle": 30,
+        },
+        yaxis={
+            "range": [50,100]    
         },
     )
     return trace, layout
