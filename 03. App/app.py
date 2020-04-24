@@ -72,6 +72,7 @@ server = app.server
 if dark:
     graph_bg = '#303030'#272B30'
     text_color = '#AAAA9F'
+    text_highlight = '#CCCCC0'
     pp_bg_green = '#356437'
     pp_bg_red = '#653434'
     pp_mk_green = '#59C159'
@@ -81,7 +82,8 @@ if dark:
     chm_fail = '#e04f38'
 else:
     graph_bg = ''
-    text_color = ''
+    text_color = '262626'
+    text_highlight = '0d0d0d'
     pp_bg_green = '#F7FAF0'
     pp_bg_red = '#F9E9E0'
     pp_mk_green = '#76B7B2'
@@ -95,6 +97,7 @@ colors = {
     'title-bg': '#444444',
     'graph-bg': graph_bg,
     'text': text_color,
+    'text-highlight': text_highlight,
     'text-dropdown': '#3A3A3A',
     'plantplot-bg-green': pp_bg_green, # Plantplot Background Green
     'plantplot-bg-red': pp_bg_red, # Plantplot Background Red
@@ -689,7 +692,7 @@ def get_cards_layout(columns, desviaciones, df):
         i = 1
         for column in columns:
             value = df[column][0]
-            children.append(dbc.ListGroupItem(column + f' ({value:.2f})', className='text-center', \
+            children.append(dbc.ListGroupItem([column, html.B(f' ({value:.2f})', style={"color": colors['text-highlight']})], className='text-center', \
                                               style={"color": colors['text'], "font-size": size_font_cards, \
                                                      "font-family": family_font,}, \
                                                   id='list-item-{}'.format(i)))
