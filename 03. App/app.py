@@ -483,16 +483,13 @@ def return_weeknumber(fecha):
 def calendar_heatmap(df, seccion):
     if seccion == 'S1':
         label = '_S1'
-        z_min = 0
-        z_max = 2
+        label_max = 2
     elif seccion == 'S2':
         label = '_S2'
-        z_min = 0
-        z_max = 2
+        label_max = 2
     else:
         label = ''
-        z_min = 0
-        z_max = 6
+        label_max = 6
         
     df['day'] = [datetime.date(fecha) for fecha in df['date']]
     
@@ -504,7 +501,8 @@ def calendar_heatmap(df, seccion):
     dates_in_year = [d1 + timedelta(i) for i in range(delta.days+1)] #gives me a list with datetimes for each day a year
     weekdays_in_year = [i.weekday() for i in dates_in_year] #gives [0,1,2,3,4,5,6,0,1,2,3,4,5,6,…] (ticktext in xaxis dict translates this to weekdays
     weeknumber_of_dates = [i.strftime("%Gww%V") for i in dates_in_year] #gives [1,1,1,1,1,1,1,2,2,2,2,2,2,2,…] name is self-explanatory
-    z = df.groupby('day').mean()[f'label{label}'] #np.random.randint(3, size=(len(dates_in_year)))
+    z = np.array([0 if x<label_max*0.8 else 1 if x<label_max*0.85 else 2 
+                  for x in df.groupby('day').mean()[f'label{label}'].values]) #df.groupby('day').mean()[f'label{label}'] 
     text = [str(i) for i in dates_in_year] #gives something like list of strings like '2018-01-25' for each date. Used in data trace to _ta good hovertext.
     
     xtickvals = [d1.strftime("%Gww%V")]
@@ -529,19 +527,27 @@ def calendar_heatmap(df, seccion):
         hoverinfo="text+z",
         xgap=3, # this
         ygap=3, # and this is used to make the grid-like apperance
-        zmin=z_min,
-        zmax=z_max,
-        showscale=False,
-        colorscale=[(0.00, colors['chm-fail']),   (0.8, colors['chm-fail']),
-                    (0.8, colors['chm-dev']), (0.85, colors['chm-dev']),
-                    (0.85, colors['chm-good']),  (1.00, colors['chm-good'])]
+        zmin=0,
+        zmax=2,
+        showscale=True,
+        colorscale=[(0, colors['chm-fail']),   (0.33, colors['chm-fail']),
+                    (0.33, colors['chm-dev']), (0.66, colors['chm-dev']),
+                    (0.66, colors['chm-good']),  (1.00, colors['chm-good'])],
+        colorbar=dict(
+            title="Anomalías",
+            # titleside="top",
+            tickmode="array",
+            tickvals=[0.33, 1, 1.66],
+            ticktext=["Muchas", "Algunas", "Pocas"],
+            ticks="outside"
+        ),
     )
     layout = dict(
         yaxis=dict(
             showline = False, showgrid = False, zeroline = False,
             tickmode="array",
-            ticktext=["Tue", "Thu", "Sun"],
-            tickvals=[1,3,5],
+            ticktext=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], 
+            tickvals=[0,1,2,3,4,5,6],
             ticks = '',
         ),
         xaxis=dict(
@@ -552,7 +558,7 @@ def calendar_heatmap(df, seccion):
         font={"color": colors['text'], "size": size_font, "family": family_font,},
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
-        margin = dict(t=40, b=40, r=15, l=30),
+        margin = dict(t=40, b=40, r=40, l=40),
     )
     return dict(data=[trace], layout=layout)
 
@@ -918,31 +924,32 @@ def summary_tab_layout(tab, df, single):
         data_bar, layout_bar = bar_graph_product_summary(df, 'product')
         titulo_bar_plot = 'Evaluación Anomalias por producto'
         titulo_line_plot = 'Estabilidad temporal del proceso por producto'
-        data_line, layout_line = liner_graph_product_summary(df, df['product'].unique(),\
-                                                df['quality'].unique(), 'month')    
+        data_line, layout_line = liner_graph_product_summary(df, df['product'].unique()[0],\
+                                                df['quality'].unique()[0], 'day')    
         pq_selector = [
             dbc.FormGroup([
-                dbc.Checklist(
+                dcc.Dropdown(
                     options=[{"label": f"Product {product}", "value": product}\
                              for product in np.sort(df['product'].unique())],                
-                    value=df['product'].unique(),
+                    value=df['product'].unique()[0],
                     id="checklist-product",
+                    style={'color': colors['text-dropdown'],},
                 ),
             ]),
             dbc.FormGroup([
-                dbc.Checklist(
+                dcc.Dropdown(
                     options=[{"label": f"Calidad {quality}", "value": quality}\
                              for quality in np.sort(df['quality'].unique())],                
-                    value=df['quality'].unique(),
+                    value=df['quality'].unique()[0],
                     id="checklist-quality",
-                    switch=True,
+                    style={'color': colors['text-dropdown'],},
                 ),
             ]),
             dbc.FormGroup([
                 dbc.RadioItems(
-                    options=[{"label": "Month", "value": "month"}, 
-                             {"label": "Day", "value": "day"}],                
-                    value="month",
+                    options=[{"label": "Day", "value": "day"},
+                        {"label": "Month", "value": "month"},],                
+                    value="day",
                     id="checklist-xaxis",
                 ),
             ]),
@@ -952,15 +959,24 @@ def summary_tab_layout(tab, df, single):
         data_bar, layout_bar = bar_graph_seccions_summary(df)
         titulo_bar_plot = 'Evaluación Anomalias por seccion'
         titulo_line_plot = 'Estabilidad temporal del proceso por seccion'
-        data_line, layout_line = liner_graph_seccions_summary(df, '1')
+        data_line, layout_line = liner_graph_seccions_summary(df, '1', 'day')
         pq_selector = [
             dbc.FormGroup([
                 # dbc.Label("Selector de seccion"),
-                dbc.RadioItems(
+                dcc.Dropdown(
                     options=[{"label": f"Seccion {seccion}", "value": seccion}\
                              for seccion in [1,2,3]],                
                     value=1,
                     id="checklist-seccion",
+                    style={'color': colors['text-dropdown'],},
+                ),
+            ]),
+            dbc.FormGroup([
+                dcc.RadioItems(
+                    options=[{"label": "Day", "value": "day"},
+                        {"label": "Month", "value": "month"},],                
+                    value="day",
+                    id="checklist-xaxis",
                 ),
             ]),
         ]         
@@ -1009,9 +1025,9 @@ def summary_tab_layout(tab, df, single):
                                     layout = layout_line,
                                 ),
                                 style={"height": '100%'},
-                                className='col-10'
+                                className='col-9'
                             ),
-                            html.Div(pq_selector,className='col-2 pt-4 h-100'),
+                            html.Div(pq_selector,className='col-3 pt-4 h-100'),
                         ], className='row h-100 w-100')
                     ], className='h-100 py-1 px-1')
                 ], className='h-100')
@@ -1046,7 +1062,7 @@ def bar_graph_product_summary(df, column):
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
-        margin={"t":30},
+        margin={"t":30, "r":15, "l": 35},
         xaxis={
             "tickangle": 30,
         },
@@ -1056,14 +1072,12 @@ def bar_graph_product_summary(df, column):
 
 def liner_graph_product_summary(df, product, quality, xaxis):
     if xaxis == 'month':
-        df['month'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
-        todas = df[(df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('month').count()['id']
-        buenas = df[(df['label']>=4) & (df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('month').count()['id']
+        df['date_groupby'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
     else:
-        df['date_notime'] = df['date'].apply(lambda x: x.date())
-        todas = df[(df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('date_notime').count()['id']
-        buenas = df[(df['label']>=4) & (df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('date_notime').count()['id']
+        df['date_groupby'] = df['date'].apply(lambda x: x.date())
         
+    todas = df[(df['product'] == product) & (df['quality'] == quality)].groupby('date_groupby').count()['id']
+    buenas = df[(df['label']>=4) & (df['product'] == product) & (df['quality'] == quality)].groupby('date_groupby').count()['id']  
     trace = dict(
         type='line',
         x = todas.index,
@@ -1073,7 +1087,7 @@ def liner_graph_product_summary(df, product, quality, xaxis):
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
-        margin={"t":30},
+        margin={"t":30, "r":15, "l": 35},
         xaxis={
             "tickangle": 30,
         },
@@ -1128,7 +1142,7 @@ def bar_graph_seccions_summary(df):
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
-        margin={"t":30},
+        margin={"t":30, "r":15, "l": 35},
         xaxis={
             "tickangle": 30,
         },
@@ -1137,10 +1151,15 @@ def bar_graph_seccions_summary(df):
     
     return [trace, trace3, trace2], layout
 
-def liner_graph_seccions_summary(df, seccion):
-    df['month'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
-    todas = df.groupby('month').count()['id']
-    buenas = df[(df[f'label_S{seccion}']>0)].groupby('month').count()['id']
+def liner_graph_seccions_summary(df, seccion, xaxis):
+    if xaxis == 'month':
+        df['date_groupby'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
+    else:
+        df['date_groupby'] = df['date'].apply(lambda x: x.date())
+        
+    todas = df.groupby('date_groupby').count()['id']
+    buenas = df[(df[f'label_S{seccion}']>0)].groupby('date_groupby').count()['id']
+    
     trace = dict(
         type='line',
         x = todas.index,
@@ -1150,7 +1169,7 @@ def liner_graph_seccions_summary(df, seccion):
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
-        margin={"t":30},
+        margin={"t":30, "r":15, "l": 35},
         xaxis={
             "tickangle": 30,
         },
@@ -1657,17 +1676,17 @@ def checklist_product_trace(ckd_product, ckd_quality, n_clicks, xaxis, active_ta
 @app.callback(
     Output("time-plot-seccions", "figure"),
     [Input("checklist-seccion", "value"), Input("search-button", "n_clicks"),
-     Input("home-page-tabs", "active_tab")],
+     Input("checklist-xaxis", "value"), Input("home-page-tabs", "active_tab")],
     [State("date-min", "date"), State("date-max", "date"), State('hour-min', 'value'),
      State('hour-max', 'value'), State('min-min', 'value'), State('min-max', 'value')],
 )
-def checklist_seccion_trace(ckd_seccion, n_clicks, active_tab_hp, datemin, datemax, hourmin, hourmax, minmin, minmax):
+def checklist_seccion_trace(ckd_seccion, n_clicks, xaxis, active_tab_hp, datemin, datemax, hourmin, hourmax, minmin, minmax):
     datemin = "'" + datemin + " " + str(hourmin).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
     datemax = "'" + datemax + " " + str(hourmax).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
     # Consulta a postgreSQL que devuelve
     df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)  
     
-    trace, layout = liner_graph_seccions_summary(df, ckd_seccion)
+    trace, layout = liner_graph_seccions_summary(df, ckd_seccion, xaxis)
     return dict(data=[trace], layout=layout)
 #%%###########################################################################
 #                              07. MAIN                                      #
