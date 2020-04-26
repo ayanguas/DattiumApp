@@ -334,12 +334,12 @@ filters = html.Div([
 
 # Report Page Layout
 reports_page_layout2 = html.Div([
-    dbc.Tabs([
-        dbc.Tab(label='Resumen por producto', tab_id='products'), 
-        dbc.Tab(label='Resumen por seccion', tab_id='seccions'),
-    ], id='summary-tabs', active_tab='products', className='Tabs1'),
-    html.Div([], id='summary-tab-content', style=dict(height='calc(100% - 40px)'))
-], className='h-100') 
+        dbc.Tabs([
+            dbc.Tab(label='Resumen por producto', tab_id='products'), 
+            dbc.Tab(label='Resumen por seccion', tab_id='seccions'),
+        ], id='summary-tabs', active_tab='products', className='Tabs1'),
+        html.Div([], id='summary-tab-content', style=dict(height='calc(100% - 40px)'))
+    ], className='h-100') 
 
 home_layout = html.Div([
     # PLot of general view of plant
@@ -1244,7 +1244,8 @@ home_page_layout = html.Div([
 @app.callback(
     [Output('selector-fechas-container', 'style'), Output('button-container', 'style'), 
      Output('bottom_seccion_hist', 'style'), Output('bottom_seccion_real', 'style'),
-     Output('plant-plot-container', 'style'), Output('filters-container', 'style')],
+     Output('plant-plot-container', 'style'), Output('filters-container', 'style'),
+     Output("home-page-tabs", "value")],
     [Input("home-page-tabs", "active_tab"), Input('calendar-heatmap', 'clickData')],
 )
 def render_tab_content(tab, clicked):
@@ -1257,6 +1258,7 @@ def render_tab_content(tab, clicked):
         bottom_seccion_hist =  dict(height='100%', visibility='visible')
         plant_plot_graph_h = dict(height='66%')
         plant_plot_filter_h = dict(height='34%')
+        active_tab = 'hist'
     else:
         button = dict(height='100%', visibility='visible')
         fechas = dict(height='0%', visibility='hidden')
@@ -1264,7 +1266,8 @@ def render_tab_content(tab, clicked):
         bottom_seccion_hist =  dict(height='0%', visibility='hidden')
         plant_plot_graph_h = dict(height='88%')
         plant_plot_filter_h = dict(height='12%')
-    return fechas, button, bottom_seccion_hist, bottom_seccion_real, plant_plot_graph_h, plant_plot_filter_h
+        active_tab = 'real'
+    return fechas, button, bottom_seccion_hist, bottom_seccion_real, plant_plot_graph_h, plant_plot_filter_h, active_tab
 
 # Callback que actualiza el gráfica cada X segundos o rango de fechas
 @app.callback(
@@ -1422,14 +1425,7 @@ def update_date_min(hour_up_min, min_up_min, hour_down_min, min_down_min,
         date_out_max = date_out_max + timedelta(hours=values_max[clicked][0], minutes=values_max[clicked][1])
     return [date_out_min.date(), str(date_out_min.hour).zfill(2), str(date_out_min.minute).zfill(2),
             date_out_max.date(), str(date_out_max.hour).zfill(2), str(date_out_max.minute).zfill(2)]
-
-@app.callback(
-    Output("home-page-tabs", "active_tab"),
-    [Input('calendar-heatmap', 'clickData')],
-)
-def change_tab(clicked):
-    return 'hist'
-
+    
 #%%###########################################################################
 #                           05_1. SECCIONS-PAGE                              #
 ##############################################################################
@@ -1592,10 +1588,6 @@ def gen_signal_s1(column, active_tab, id_data):
 
 # Página con los informes por seccion y producto
 reports_page_layout = html.Div([
-    dbc.Tabs([
-            dbc.Tab(label='Resumen por producto', tab_id='products'), 
-            dbc.Tab(label='Resumen por seccion', tab_id='seccions'),
-    ], id='summary-tabs', active_tab='products', className='invisible', style={"height": 0}),
     reports_page_layout1,
 ], className='h-100') 
 
@@ -1615,7 +1607,7 @@ def render_summary_tab_content(active_tab, n_clicks, datemin, datemax, hourmin, 
     datemin = "'" + datemin + " " + str(hourmin).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
     datemax = "'" + datemax + " " + str(hourmax).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
     # Consulta a postgreSQL que devuelve
-    df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)
+    df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)  
 
     if active_tab == "products":
         return summary_tab_layout('products', df, True)
@@ -1628,12 +1620,11 @@ def render_summary_tab_content(active_tab, n_clicks, datemin, datemax, hourmin, 
 @app.callback(
     Output("time-plot-products", "figure"),
     [Input("checklist-product", "value"), Input("checklist-quality", "value"), 
-     Input("search-button", "n_clicks"), Input("checklist-xaxis", "value"),
-     Input("home-page-tabs", "active_tab")],
+     Input("search-button", "n_clicks"), Input("checklist-xaxis", "value")],
     [State("date-min", "date"), State("date-max", "date"), State('hour-min', 'value'),
      State('hour-max', 'value'), State('min-min', 'value'), State('min-max', 'value')],
 )
-def checklist_product_trace(ckd_product, ckd_quality, n_clicks, xaxis, active_tab_hp, datemin, datemax, hourmin, hourmax, minmin, minmax):
+def checklist_product_trace(ckd_product, ckd_quality, n_clicks, xaxis, datemin, datemax, hourmin, hourmax, minmin, minmax):
     
     datemin = "'" + datemin + " " + str(hourmin).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
     datemax = "'" + datemax + " " + str(hourmax).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
@@ -1645,12 +1636,11 @@ def checklist_product_trace(ckd_product, ckd_quality, n_clicks, xaxis, active_ta
 
 @app.callback(
     Output("time-plot-seccions", "figure"),
-    [Input("checklist-seccion", "value"), Input("search-button", "n_clicks"),
-     Input("home-page-tabs", "active_tab")],
+    [Input("checklist-seccion", "value"), Input("search-button", "n_clicks")],
     [State("date-min", "date"), State("date-max", "date"), State('hour-min', 'value'),
      State('hour-max', 'value'), State('min-min', 'value'), State('min-max', 'value')],
 )
-def checklist_seccion_trace(ckd_seccion, n_clicks, active_tab_hp, datemin, datemax, hourmin, hourmax, minmin, minmax):
+def checklist_seccion_trace(ckd_seccion, n_clicks, datemin, datemax, hourmin, hourmax, minmin, minmax):
     datemin = "'" + datemin + " " + str(hourmin).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
     datemax = "'" + datemax + " " + str(hourmax).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
     # Consulta a postgreSQL que devuelve
