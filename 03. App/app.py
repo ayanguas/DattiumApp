@@ -352,7 +352,7 @@ home_layout = html.Div([
             dbc.CardBody([
                 html.Div([
                     html.Div([
-                        html.Div(selector_fecha, id='selector-fechas-container', style={"height":0, "visibility": "hidden"}),
+                        html.Div(selector_fecha, id='selector-fechas-container', className='invisible'),#style={"height":0, "visibility": "hidden"}),
                         html.Div([
                             html.Div(className='col-11'),
                             dbc.Button("Pause", className='ml-auto', id="pause-button"),
@@ -376,8 +376,8 @@ home_layout = html.Div([
         # html.Div([dcc.Graph(id=f'plant-plot-{altertab}')],className='invisible', style={'height': 0}),
     ], className='pb-3 px-4 pt-2 h-50'), 
     html.Div([
-        html.Div([bottom_seccion_real_layout], id='bottom_seccion_real', style={'height': '100%'}),
-        html.Div(reports_page_layout2, id='bottom_seccion_hist', style={'height': 0, "visibility": "hidden"}),
+        html.Div([bottom_seccion_real_layout], id='bottom_seccion_real', className='h-100'),#style={'height': '100%'}),
+        html.Div(reports_page_layout2, id='bottom_seccion_hist', className='invisible')#style={'height': 0, "visibility": "hidden"}),
     ], id='hp-bottom-div', className='pt-3 w-100 h-50'),
 ], className='h-100 w-100') 
 
@@ -573,7 +573,8 @@ list_columns_layout = html.Div([
         html.Div([
             dbc.Card([
                 dbc.CardHeader([
-                    html.H4('Desviaciones', className='text-center text-style'),
+                    html.H4('Desviaciones', 
+                            className='text-center text-style'),
                 ]),
                 dbc.CardBody([
                     dbc.ListGroup(id='list-des'), 
@@ -584,7 +585,8 @@ list_columns_layout = html.Div([
         html.Div([
             dbc.Card([
                 dbc.CardHeader([
-                    html.H4('Fallos de registro/sensor', className='text-center text-style'),
+                    html.H4('Fallos de registro/sensor', 
+                            className='text-center text-style'),
                 ]),
                 dbc.CardBody([
                     dbc.ListGroup(id='list-fal'), 
@@ -598,7 +600,8 @@ def line_plot_layout(tab):
     # Título del gráfico 
     return [
         dbc.Card([
-            dbc.CardHeader([html.H4('Análisis Temporal', className='text-style')], className='px-2 pt-1 p-0'),
+            dbc.CardHeader([html.H4('Análisis Temporal', className='text-style')], 
+                           className='px-2 pt-1 p-0'),
             # Gráfico S1
             dbc.CardBody([
                 dcc.Graph(
@@ -620,7 +623,8 @@ def histo_layout(tab):
     return [
     # Título del histograma de S1
     dbc.Card([
-        dbc.CardHeader([html.H4('Comparativa de operación', className='text-style')], className='px-2 pt-1 p-0'),
+        dbc.CardHeader([html.H4('Comparativa de operación', className='text-style')], 
+                       className='px-2 pt-1 p-0'),
         dbc.CardBody([
             # Histograma de S1
             dcc.Graph(
@@ -673,7 +677,8 @@ def dropdown_cardinfo_layout(tab):
                     ], className='px-2 py-1'),
                     dbc.CardBody([
                         # get_card_info_layout(id, default)
-                        html.P("ID: ********", className='card-text text-left', id='card_info_id'),
+                        html.P("ID: ********", className='card-text text-left', 
+                               id='card_info_id'),
                     ], className='h-100'),
                 ], className='h-100')
             ], className='h-50 pt-2')
@@ -698,10 +703,13 @@ def get_cards_layout(columns, desviaciones, df):
         i = 1
         for column in columns:
             value = df[column][0]
-            children.append(dbc.ListGroupItem([column, html.B(f' ({value:.2f})', style={"color": colors['text-highlight']})], className='text-center', \
-                                              style={"color": colors['text'], "font-size": size_font_cards, \
-                                                     "font-family": family_font,}, \
-                                                  id='list-item-{}'.format(i)))
+            children.append(dbc.ListGroupItem([column, html.B(f' ({value:.2f})', 
+                                                              style={"color": colors['text-highlight']})], 
+                                              className='text-center', 
+                                              style={"color": colors['text'], 
+                                                     "font-size": size_font_cards, 
+                                                     "font-family": family_font,}, 
+                                              id='list-item-{}'.format(i)))
             i+=1
         return children
     else:
@@ -950,7 +958,7 @@ def summary_tab_layout(tab, df, single):
                     options=[{"label": "Day", "value": "day"},
                         {"label": "Month", "value": "month"},],                
                     value="day",
-                    id="checklist-xaxis",
+                    id=f"checklist-xaxis-product",
                 ),
             ]),
         ]
@@ -972,11 +980,11 @@ def summary_tab_layout(tab, df, single):
                 ),
             ]),
             dbc.FormGroup([
-                dcc.RadioItems(
+                dbc.RadioItems(
                     options=[{"label": "Day", "value": "day"},
                         {"label": "Month", "value": "month"},],                
                     value="day",
-                    id="checklist-xaxis",
+                    id=f"checklist-xaxis-seccion",
                 ),
             ]),
         ]         
@@ -1210,7 +1218,7 @@ navbar = dbc.Navbar([
             ),
             dbc.Nav([
                 dbc.NavItem(dbc.NavLink("Home", href="/", style={"color":colors['text']})),
-                dbc.NavItem(dbc.NavLink("Reports", href="/reports", style={"color":colors['text']})),
+                dbc.NavItem(dbc.NavLink("Reports", href="/reports", style={"color":colors['text']}, id='report_page_nav')),
             ], className=''),
     ], className='lg py-1 px-1', color=colors['navbar'], style={"height": '5vh'})
     
@@ -1272,8 +1280,8 @@ home_page_layout = html.Div([
 
 # Callback que modifica el contenido de la página en función del Tab activo.
 @app.callback(
-    [Output('selector-fechas-container', 'style'), Output('button-container', 'style'), 
-     Output('bottom_seccion_hist', 'style'), Output('bottom_seccion_real', 'style'),
+    [Output('selector-fechas-container', 'className'), Output('button-container', 'className'), 
+     Output('bottom_seccion_hist', 'className'), Output('bottom_seccion_real', 'className'),
      Output('plant-plot-container', 'style'), Output('filters-container', 'style')],
     [Input("home-page-tabs", "active_tab"), Input('calendar-heatmap', 'clickData')],
 )
@@ -1281,17 +1289,17 @@ def render_tab_content(tab, clicked):
     ctx = dash.callback_context
     clicked = ctx.triggered[0]['prop_id'].split('.')[0]
     if (tab == 'hist') or (clicked == 'calendar-heatmap'):
-        fechas = dict(height='100%', visibility='visible')
-        button = dict(height='0%', visibility='hidden')
-        bottom_seccion_real = dict(height='0%', visibility='hidden')
-        bottom_seccion_hist =  dict(height='100%', visibility='visible')
+        fechas = 'h-100' #dict(height='100%', visibility='visible')
+        button = 'invisible' #dict(height='0%', visibility='hidden')
+        bottom_seccion_real = 'invisible' #dict(height='0%', visibility='hidden')
+        bottom_seccion_hist =  'h-100' #dict(height='100%', visibility='visible')
         plant_plot_graph_h = dict(height='66%')
         plant_plot_filter_h = dict(height='34%')
     else:
-        button = dict(height='100%', visibility='visible')
-        fechas = dict(height='0%', visibility='hidden')
-        bottom_seccion_real = dict(height='100%', visibility='visible')
-        bottom_seccion_hist =  dict(height='0%', visibility='hidden')
+        button = 'row w-100 pr-3 pb-1 h-100' #dict(height='100%', visibility='visible')
+        fechas = 'invisible' #dict(height='0%', visibility='hidden')
+        bottom_seccion_real = 'h-100'#dict(height='100%', visibility='visible')
+        bottom_seccion_hist =  'invisible'#dict(height='0%', visibility='hidden')
         plant_plot_graph_h = dict(height='88%')
         plant_plot_filter_h = dict(height='12%')
     return fechas, button, bottom_seccion_hist, bottom_seccion_real, plant_plot_graph_h, plant_plot_filter_h
@@ -1622,11 +1630,15 @@ def gen_signal_s1(column, active_tab, id_data):
 
 # Página con los informes por seccion y producto
 reports_page_layout = html.Div([
-    dbc.Tabs([
-            dbc.Tab(label='Resumen por producto', tab_id='products'), 
-            dbc.Tab(label='Resumen por seccion', tab_id='seccions'),
-    ], id='summary-tabs', active_tab='products', className='invisible', style={"height": 0}),
     reports_page_layout1,
+    dcc.Graph(
+        id='calendar-heatmap',
+        className='invisible'
+    ),
+    dbc.Tabs([
+        dbc.Tab(label='Tiempo Real', tab_id='real'),
+        dbc.Tab(label='Historico', tab_id='hist'),
+    ], className='invisible', id='home-page-tabs'), 
 ], className='h-100') 
 
 #%%###########################################################################
@@ -1636,7 +1648,7 @@ reports_page_layout = html.Div([
 # Callback que modifica el contenido de la página en función del Tab activo.
 @app.callback(
     Output("summary-tab-content", "children"),
-    [Input("summary-tabs", "active_tab"), Input("search-button", "n_clicks")],
+    [Input("summary-tabs", "active_tab"), Input('report_page_nav', 'n_clicks')],
     [State("date-min", "date"), State("date-max", "date"), State('hour-min', 'value'),
      State('hour-max', 'value'), State('min-min', 'value'), State('min-max', 'value')],
 )
@@ -1658,7 +1670,7 @@ def render_summary_tab_content(active_tab, n_clicks, datemin, datemax, hourmin, 
 @app.callback(
     Output("time-plot-products", "figure"),
     [Input("checklist-product", "value"), Input("checklist-quality", "value"), 
-     Input("search-button", "n_clicks"), Input("checklist-xaxis", "value"),
+     Input("search-button", "n_clicks"), Input("checklist-xaxis-product", "value"),
      Input("home-page-tabs", "active_tab")],
     [State("date-min", "date"), State("date-max", "date"), State('hour-min', 'value'),
      State('hour-max', 'value'), State('min-min', 'value'), State('min-max', 'value')],
@@ -1676,7 +1688,7 @@ def checklist_product_trace(ckd_product, ckd_quality, n_clicks, xaxis, active_ta
 @app.callback(
     Output("time-plot-seccions", "figure"),
     [Input("checklist-seccion", "value"), Input("search-button", "n_clicks"),
-     Input("checklist-xaxis", "value"), Input("home-page-tabs", "active_tab")],
+     Input("checklist-xaxis-seccion", "value"), Input("home-page-tabs", "active_tab")],
     [State("date-min", "date"), State("date-max", "date"), State('hour-min', 'value'),
      State('hour-max', 'value'), State('min-min', 'value'), State('min-max', 'value')],
 )
