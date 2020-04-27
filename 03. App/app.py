@@ -1187,21 +1187,6 @@ def liner_graph_seccions_summary(df, seccion, xaxis):
     )
     return trace, layout
 
-reports_page_layout1 = html.Div([
-        dbc.Tabs([
-            dbc.Tab(label='Resumen', tab_id='all'),
-        ], id='summary-tabs', active_tab='all', className='Tabs1 invisible', style=dict(height='0')),
-        html.Div([
-            dbc.Card([
-                dbc.CardHeader([html.H5('Selector de fechas', className='py-0 text-style')], className='px-2 pt-1 p-0'),
-                dbc.CardBody([
-                    selector_fecha
-                ], className='h-100 pb-2'),
-            ], className='h-100')
-        ], className='px-3 pt-2', style={"height": "22%"}),
-        html.Div(id='summary-tab-content', style=dict(height='78%'))
-    ], className='h-100') 
-
 #%%###########################################################################
 #                              03. LAYOUT                                    #
 ##############################################################################
@@ -1630,7 +1615,32 @@ def gen_signal_s1(column, active_tab, id_data):
 
 # Página con los informes por seccion y producto
 reports_page_layout = html.Div([
-    reports_page_layout1,
+    html.Div([
+        dbc.Tabs([
+            dbc.Tab(label='Resumen', tab_id='all'),
+        ], id='summary-tabs', active_tab='all', className='Tabs1 invisible', style=dict(height='0')),
+        html.Div([
+            dbc.Card([
+                dbc.CardHeader([html.H5('Selector de fechas', className='py-0 text-style')], className='px-2 pt-1 p-0'),
+                dbc.CardBody([
+                    html.Div([selector_fecha], className='h-100 col-11 m-0'),
+                    html.Div([
+                        html.I(className="fas fa-caret-up fa-2x text-center col-2 invisible"),
+                        html.Div([
+                            html.I(id="hour-min-up", n_clicks=0, n_clicks_timestamp = -1,
+                                className="far fa-save fa-3x text-center col-1 align-middle",
+                                style={"cursor": "pointer"}),
+                            dcc.DatePickerSingle(date=datetime.date(date_max), display_format='DD-MM-YYYY',
+                                                 className='invisible h-100 col-2', persistence=True),
+                        ], className='row h-50 pb-2 m-0'),
+                    ], className='h-100 col-1  m-0 pl-5')
+                ], className='h-100 pb-2 row m-0'),
+            ], className='h-100')
+        ], className='px-3 pt-2', style={"height": "22%"}),
+        html.Div(id='summary-tab-content', style=dict(height='78%'))
+    ], className='h-100'),
+    
+    # INVISIBLE
     dcc.Graph(
         id='calendar-heatmap',
         className='invisible'
