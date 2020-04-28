@@ -19,10 +19,36 @@
 }
 
 .text-style-table {
-    font-size: calc(0.55em + 0.25vw) !important;
+    font-size: calc(0.5em + 0.5vw) !important;
     line-height: 1em !important;
 }
 
 .table-responsive{
     height: 100%;
 }
+
+.invisible * {
+    max-height: 0 !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    visibility: hidden !important;
+    margin: 0 !important;
+    border: 0 !important;
+    font-size: 0 !important,
+    line-height: 0 !important,
+}
+
+.invisible {
+    max-height: 0 !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    visibility: hidden !important;
+    margin: 0 !important;
+    border: 0 !important;
+    font-size: 0 !important,
+    line-height: 0 !important,
+}
+
+
