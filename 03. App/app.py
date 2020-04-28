@@ -571,7 +571,7 @@ list_columns_layout = html.Div([
                 ]),
                 dbc.CardBody([
                     dbc.ListGroup(id='list-des'), 
-                ], className='h-100'),
+                ], className='h-100 overflow-auto'),
             ], color='warning', outline=True, className='h-100'),
         ], className='col-6 px-2 h-100'),
         # Lista de fallos de registro/sensor S1
@@ -582,7 +582,7 @@ list_columns_layout = html.Div([
                 ]),
                 dbc.CardBody([
                     dbc.ListGroup(id='list-fal'), 
-                ], className='h-100'),
+                ], className='h-100 overflow-auto'),
             ], color='danger', outline=True, className='h-100'),
         ], className='col-6 px-2 h-100'),
     ], className='row h-100 m-0')#row
@@ -639,39 +639,26 @@ def dropdown_cardinfo_layout(tab):
     else:
         columns = columns_s2
         default = 'Flotation Column 02 Level'
-        
-    return html.Div([
-            # Dropdown selector de señal
-            html.Div([
-                dbc.Card([
-                    dbc.CardHeader([
-                        html.H4('Selector de señal', className='text-style m-0'),
-                    ], className='px-2 py-1'),
-                    dbc.CardBody([
-                        dcc.Dropdown(
-                            id="signal-dropdown",
-                            options=[{'label': x, 'value': x} for x in columns],
-                            value=default,
-                            style={
-                                'color': colors['text-dropdown'],
-                            },
-                        ),
-                    ], className='h-100'),
-                ], className='h-100'),
-            ], className='h-50 pb-2'),
-            # Carta informativa de la ID seleccionada S1
-            html.Div([
-                dbc.Card([
-                    dbc.CardHeader([
-                        html.H4('Información de la barra', className='text-style m-0'),
-                    ], className='px-2 py-1'),
-                    dbc.CardBody([
-                        # get_card_info_layout(id, default)
-                        html.P("ID: ********", className='card-text text-left', id='card_info_id'),
-                    ], className='h-100'),
-                ], className='h-100')
-            ], className='h-50 pt-2')
-        ], className='h-100')
+    
+    # Dropdown selector de señal
+    layout = html.Div([
+        dbc.Card([
+            dbc.CardHeader([
+                html.H4('Selector de señal', className='text-style m-0'),
+            ], className='px-2 py-1'),
+            dbc.CardBody([
+                dcc.Dropdown(
+                    id="signal-dropdown",
+                    options=[{'label': x, 'value': x} for x in columns],
+                    value=default,
+                    style={
+                        'color': colors['text-dropdown'],
+                    },
+                ),
+            ], className='h-100'),
+        ], className='h-100'),
+    ], className='h-100'),
+    return layout
                 
 # Funcion que devuelve (aleatoriamente) las columnas que se desvian o tienen algun fallo
 def get_columns(df, seccion):
@@ -713,16 +700,15 @@ def get_cards_layout(columns, desviaciones, df):
 # Función que devuelve el texto que ira dentro del recuadro de información de la barra seleccionada page-2
 def get_card_info_layout(id_data, column):
     df = pd.read_sql('SELECT * FROM signals WHERE id={}'.format(id_data), server_conn)
+    spaces = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
     if len(df)==1:
-        text = dcc.Markdown('''**ID**: {}  
-                            **Date**: {}   
-                            **{}**: {:.2f}  '''.format(df['id'].iloc[0], df['date'].iloc[0],\
-                            column, df[column].iloc[0]), style={"color": colors['text'], \
-                                                                          "font-size": size_font_cards, "font-family": family_font,})
+        text = dcc.Markdown('''**ID**: {} {} **Date**: {} {} **{}**: {:.2f}  '''.format(df['id'].iloc[0], spaces, df['date'].iloc[0],
+                            spaces, column, df[column].iloc[0]), style={"color": colors['text'], 
+                                                                "font-size": size_font_cards, 
+                                                                "font-family": family_font,})
     else:
-        text = dcc.Markdown('''**ID**: -  
-                            **Date**: -   
-                            **-**: -  ''', style={"color": colors['text'], "font-size": size_font_cards, "font-family": family_font,})              
+        text = dcc.Markdown('''**ID**: - {} **Date**: - {} **-**: -  '''.format(spaces, spaces), 
+                            style={"color": colors['text'], "font-size": size_font_cards, "font-family": family_font,})              
     return text
 
 # Función que devuelve el trace y layout del gráfico de la señal
@@ -1462,14 +1448,27 @@ seccions_page_layout = html.Div([
     html.Div([
         html.Div([
             # Listas de desviacion y fallos de resgistros/sensores
-            html.Div(
+            html.Div([
+                # Carta informativa de la ID seleccionada S1
+                html.Div([
+                    dbc.Card([
+                        dbc.CardHeader([
+                            html.H4('Información de la barra', className='text-style m-0'),
+                        ], className='px-2 py-1'),
+                        dbc.CardBody([
+                            # get_card_info_layout(id, default)
+                            html.P("ID: ********", className='card-text text-left', id='card_info_id'),
+                        ], className='h-100'),
+                    ], className='h-100'),
+                ], className='h-25 pb-2'),
+                # Lista de señales con desviaciones/fallos
                 dbc.Card([
                     dbc.CardHeader([html.H5('Variables con desviación o errores', className='py-0 text-style')], className='px-2 pt-1 p-0'),
                     dbc.CardBody([
                         list_columns_layout
                     ], className='h-100')
-                ], className='h-100')
-            , className='col-7 px-1 h-100', id='list_columns'),
+                ], className='h-75')
+            ], className='col-7 px-1 h-100', id='list_columns'),
             # Imagen
             html.Div([
                 dbc.Card([
@@ -1536,9 +1535,9 @@ def render_seccion_tab_content(active_tab):
                Input("seccion-tabs", "active_tab")],
               [State('store-id-clicked', 'data')])
 def modify_info_card_s1(timestamp, column, active_tab, id_data):  
-    return_data = dcc.Markdown('''**ID**: -  
-                                **Date**: -   
-                                **-**: -  ''')  
+    spaces = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+    return_data = dcc.Markdown('''**ID**: - {} **Date**: - {} **-**: -  '''.format(spaces, spaces), 
+                            style={"color": colors['text'], "font-size": size_font_cards, "font-family": family_font,})      
     if id_data is not None:
         if 'id' in id_data.keys():
             return_data = get_card_info_layout(id_data['id'], column)
