@@ -123,8 +123,19 @@ size_font = 16 # Graph Text Size
 size_font_summary = 16 # Summary Graph Text Size
 size_font_cards = 16 # Font Text Size
 pp_size = '10%' # Plant plot graph size
-summary_graph_size = '400px' # Summary graphs size
 navbar_logo_size = "90%" # Navbar logo size
+
+perfiles = {
+    0: '5.5',
+    1: '7.5',
+    2: '10'
+}
+
+calidad = {
+    0: '',
+    1: '',
+    2: '',
+}
 
 #%%###########################################################################
 #                       02_01. FUNCIONES (HOME PAGE)                         #
@@ -897,14 +908,14 @@ def product_summary_table(df):
     fail_p = df[df['label']<4].groupby('product').count()['id'].idxmax() # Producto con más fallos
     fail_q = df[df['label']<4].groupby('quality').count()['id'].idxmax() # Calidad con más fallos
     fail_pq = df[df['label']<4].groupby(['product', 'quality']).count()['id'].idxmax() # Producto con más fallos
-    df_table = pd.DataFrame(data=[['Producto + fabricado', 'Producto ' + str(max_p)],\
-                                  ['Calidad + fabricada', 'Calidad ' + str(max_q)],\
-                                  ['Producto/Calidad + fabricada', 'Producto ' + str(max_pq[0])+'/'+\
-                                   'Calidad ' + str(max_pq[1])],
-                                  ['Producto con + fallos', 'Producto ' + str(fail_p)],\
-                                  ['Calidad con + fallos', 'Calidad ' + str(fail_q)],\
-                                  ['Producto/Calidad con + fallos', 'Producto ' + str(fail_pq[0])+'/'+\
-                                   'Calidad ' + str(fail_pq[1])]])
+    df_table = pd.DataFrame(data=[['Producto + fabricado', 'Perfil ' + perfiles[max_p]],
+                                  ['Calidad + fabricada', 'Calidad ' + str(max_q)],
+                                  ['Producto/Calidad + fabricada', 'Perfil ' +
+                                   perfiles[max_pq[0]] + ' / Calidad ' + str(max_pq[1])],
+                                  ['Producto con + fallos', 'Perfil ' + perfiles[fail_p]],
+                                  ['Calidad con + fallos', 'Calidad ' + str(fail_q)],
+                                  ['Producto/Calidad con + fallos', 'Perfil ' + 
+                                   perfiles[fail_pq[0]]+' / Calidad ' + str(fail_pq[1])]])
     product_table = make_table(df_table)
     return product_table
 
@@ -922,6 +933,14 @@ def seccion_summary_table(df):
 # Devuelve el layout de los tabs de reports
 def summary_tab_layout(tab, df, single):
     
+    product_options = [{"label": f"Perfil {perfiles[product]}", "value": product}
+                             for product in np.sort(df['product'].unique())]
+    product_options.append({"label": "Todos", "value": -1})
+    
+    quality_options = [{"label": f"Calidad {quality}", "value": quality} 
+                       for quality in np.sort(df['quality'].unique())]
+    quality_options.append({"label": "Todos", "value": -1})
+    
     if single:
         hcontainer = '100%'
     else:
@@ -937,18 +956,16 @@ def summary_tab_layout(tab, df, single):
         pq_selector = [
             dbc.FormGroup([
                 dcc.Dropdown(
-                    options=[{"label": f"Product {product}", "value": product}\
-                             for product in np.sort(df['product'].unique())],                
-                    value=df['product'].unique()[0],
+                    options=product_options,                
+                    value=-1,#df['product'].unique()[0],
                     id="checklist-product",
                     style={'color': colors['text-dropdown'],},
                 ),
             ]),
             dbc.FormGroup([
                 dcc.Dropdown(
-                    options=[{"label": f"Calidad {quality}", "value": quality}\
-                             for quality in np.sort(df['quality'].unique())],                
-                    value=df['quality'].unique()[0],
+                    options= quality_options,       
+                    value=-1,
                     id="checklist-quality",
                     style={'color': colors['text-dropdown'],},
                 ),
@@ -1079,13 +1096,22 @@ def bar_graph_product_summary(df, column):
     return [trace, trace2], layout
 
 def liner_graph_product_summary(df, product, quality, xaxis):
+    if product == -1:
+        fproduct = df['product'].isin(df['product'].unique())
+    else:
+        fproduct = df['product'] == product
+    if quality == -1:
+        fquality = df['quality'].isin(df['quality'].unique())
+    else:
+        fquality = df['quality'] == quality
+        
     if xaxis == 'month':
         df['date_groupby'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
     else:
         df['date_groupby'] = df['date'].apply(lambda x: x.date())
         
-    todas = df[(df['product'] == product) & (df['quality'] == quality)].groupby('date_groupby').count()['id']
-    buenas = df[(df['label']>=4) & (df['product'] == product) & (df['quality'] == quality)].groupby('date_groupby').count()['id']  
+    todas = df[(fproduct) & (fquality)].groupby('date_groupby').count()['id']
+    buenas = df[(df['label']>=4) & (fproduct) & (fquality)].groupby('date_groupby').count()['id']  
     trace = dict(
         type='line',
         x = todas.index,
@@ -1500,12 +1526,6 @@ seccions_page_layout = html.Div([
             #Dropdown + info card
             html.Div(
                 dropdown_cardinfo_layout('s1')
-                # dbc.Card([
-                #     dbc.CardHeader([html.H5('Información + filtros', className='py-0 text-style')], className='px-2 pt-1 p-0'),
-                #     dbc.CardBody([
-                #         dropdown_cardinfo_layout('s1')
-                #     ], className='h-100 px-2 py-2'),
-                # ], className='h-100')
             , className='col-2 h-100 px-1', id='dropdown_card_info'),      
             
             # Plot señal S1
