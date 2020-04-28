@@ -933,7 +933,7 @@ def summary_tab_layout(tab, df, single):
         
     if tab == 'products':
         table = product_summary_table(df)
-        data_bar, layout_bar = bar_graph_product_summary(df, 'product')
+        data_bar, layout_bar = bar_graph_product_summary(df)
         titulo_bar_plot = 'Evaluación Anomalias por producto'
         titulo_line_plot = 'Estabilidad temporal del proceso por producto'
         data_line, layout_line = liner_graph_product_summary(df, df['product'].unique()[0],\
@@ -1046,7 +1046,7 @@ def summary_tab_layout(tab, df, single):
         ], className='row py-1 px-2 m-0 w-100', style={"height": '100%'})], className='pt-1', style={"height": hcontainer})
 
 # Devuelve el gráfico de barras de barras buenas/malas en funcion de una o varias columnas
-def bar_graph_product_summary(df, column):
+def bar_graph_product_summary(df):
     todas = df.groupby('product').count()['id']
     buenas = df[df['label']>=4].groupby('product').count()['id']
     malas = df[df['label']<4].groupby('product').count()['id']
@@ -1728,6 +1728,39 @@ def checklist_seccion_trace(ckd_seccion, n_clicks, xaxis, active_tab_hp, datemin
     
     trace, layout = liner_graph_seccions_summary(df, ckd_seccion, xaxis)
     return dict(data=[trace], layout=layout)
+
+@app.callback(
+    Output("bar-plot-products", "figure"),
+    [Input("search-button", "n_clicks"), Input("home-page-tabs", "active_tab")],
+    [State("date-min", "date"), State("date-max", "date"), State('hour-min', 'value'),
+     State('hour-max', 'value'), State('min-min', 'value'), State('min-max', 'value')],
+)
+def bar_graph_product(n_clicks, active_tab_hp, datemin, datemax, hourmin, hourmax, minmin, minmax):
+    
+    datemin = "'" + datemin + " " + str(hourmin).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
+    datemax = "'" + datemax + " " + str(hourmax).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
+    # Consulta a postgreSQL que devuelve
+    df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)  
+    
+    trace, layout = bar_graph_product_summary(df)
+    return dict(data=trace, layout=layout)
+
+@app.callback(
+    Output("bar-plot-seccions", "figure"),
+    [Input("search-button", "n_clicks"), Input("home-page-tabs", "active_tab")],
+    [State("date-min", "date"), State("date-max", "date"), State('hour-min', 'value'),
+     State('hour-max', 'value'), State('min-min', 'value'), State('min-max', 'value')],
+)
+def bar_graph_seccion(n_clicks, active_tab_hp, datemin, datemax, hourmin, hourmax, minmin, minmax):
+    
+    datemin = "'" + datemin + " " + str(hourmin).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
+    datemax = "'" + datemax + " " + str(hourmax).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
+    # Consulta a postgreSQL que devuelve
+    df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)  
+    
+    trace, layout = bar_graph_seccions_summary(df)
+    return dict(data=trace, layout=layout)
+
 #%%###########################################################################
 #                              07. MAIN                                      #
 ##############################################################################
