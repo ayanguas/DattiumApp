@@ -123,8 +123,19 @@ size_font = 16 # Graph Text Size
 size_font_summary = 16 # Summary Graph Text Size
 size_font_cards = 16 # Font Text Size
 pp_size = '10%' # Plant plot graph size
-summary_graph_size = '400px' # Summary graphs size
 navbar_logo_size = "90%" # Navbar logo size
+
+perfiles = {
+    0: '5.5',
+    1: '7.5',
+    2: '10'
+}
+
+calidad = {
+    0: '',
+    1: '',
+    2: '',
+}
 
 #%%###########################################################################
 #                       02_01. FUNCIONES (HOME PAGE)                         #
@@ -352,7 +363,7 @@ home_layout = html.Div([
             dbc.CardBody([
                 html.Div([
                     html.Div([
-                        html.Div(selector_fecha, id='selector-fechas-container', style={"height":0, "visibility": "hidden"}),
+                        html.Div(selector_fecha, id='selector-fechas-container', className='invisible'),#style={"height":0, "visibility": "hidden"}),
                         html.Div([
                             html.Div(className='col-11'),
                             dbc.Button("Pause", className='ml-auto', id="pause-button"),
@@ -376,8 +387,8 @@ home_layout = html.Div([
         # html.Div([dcc.Graph(id=f'plant-plot-{altertab}')],className='invisible', style={'height': 0}),
     ], className='pb-3 px-4 pt-2 h-50'), 
     html.Div([
-        html.Div([bottom_seccion_real_layout], id='bottom_seccion_real', style={'height': '100%'}),
-        html.Div(reports_page_layout2, id='bottom_seccion_hist', style={'height': 0, "visibility": "hidden"}),
+        html.Div([bottom_seccion_real_layout], id='bottom_seccion_real', className='h-100'),#style={'height': '100%'}),
+        html.Div(reports_page_layout2, id='bottom_seccion_hist', className='invisible')#style={'height': 0, "visibility": "hidden"}),
     ], id='hp-bottom-div', className='pt-3 w-100 h-50'),
 ], className='h-100 w-100') 
 
@@ -483,16 +494,13 @@ def return_weeknumber(fecha):
 def calendar_heatmap(df, seccion):
     if seccion == 'S1':
         label = '_S1'
-        z_min = 0
-        z_max = 2
+        label_max = 2
     elif seccion == 'S2':
         label = '_S2'
-        z_min = 0
-        z_max = 2
+        label_max = 2
     else:
         label = ''
-        z_min = 0
-        z_max = 6
+        label_max = 6
         
     df['day'] = [datetime.date(fecha) for fecha in df['date']]
     
@@ -504,7 +512,8 @@ def calendar_heatmap(df, seccion):
     dates_in_year = [d1 + timedelta(i) for i in range(delta.days+1)] #gives me a list with datetimes for each day a year
     weekdays_in_year = [i.weekday() for i in dates_in_year] #gives [0,1,2,3,4,5,6,0,1,2,3,4,5,6,…] (ticktext in xaxis dict translates this to weekdays
     weeknumber_of_dates = [i.strftime("%Gww%V") for i in dates_in_year] #gives [1,1,1,1,1,1,1,2,2,2,2,2,2,2,…] name is self-explanatory
-    z = df.groupby('day').mean()[f'label{label}'] #np.random.randint(3, size=(len(dates_in_year)))
+    z = np.array([0 if x<label_max*0.8 else 1 if x<label_max*0.85 else 2 
+                  for x in df.groupby('day').mean()[f'label{label}'].values]) #df.groupby('day').mean()[f'label{label}'] 
     text = [str(i) for i in dates_in_year] #gives something like list of strings like '2018-01-25' for each date. Used in data trace to _ta good hovertext.
     
     xtickvals = [d1.strftime("%Gww%V")]
@@ -529,19 +538,27 @@ def calendar_heatmap(df, seccion):
         hoverinfo="text+z",
         xgap=3, # this
         ygap=3, # and this is used to make the grid-like apperance
-        zmin=z_min,
-        zmax=z_max,
-        showscale=False,
-        colorscale=[(0.00, colors['chm-fail']),   (0.8, colors['chm-fail']),
-                    (0.8, colors['chm-dev']), (0.85, colors['chm-dev']),
-                    (0.85, colors['chm-good']),  (1.00, colors['chm-good'])]
+        zmin=0,
+        zmax=2,
+        showscale=True,
+        colorscale=[(0, colors['chm-fail']),   (0.33, colors['chm-fail']),
+                    (0.33, colors['chm-dev']), (0.66, colors['chm-dev']),
+                    (0.66, colors['chm-good']),  (1.00, colors['chm-good'])],
+        colorbar=dict(
+            title="Anomalías",
+            # titleside="top",
+            tickmode="array",
+            tickvals=[0.33, 1, 1.66],
+            ticktext=["Muchas", "Algunas", "Pocas"],
+            ticks="outside"
+        ),
     )
     layout = dict(
         yaxis=dict(
             showline = False, showgrid = False, zeroline = False,
             tickmode="array",
-            ticktext=["Tue", "Thu", "Sun"],
-            tickvals=[1,3,5],
+            ticktext=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], 
+            tickvals=[0,1,2,3,4,5,6],
             ticks = '',
         ),
         xaxis=dict(
@@ -552,7 +569,7 @@ def calendar_heatmap(df, seccion):
         font={"color": colors['text'], "size": size_font, "family": family_font,},
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
-        margin = dict(t=40, b=40, r=15, l=30),
+        margin = dict(t=40, b=40, r=40, l=40),
     )
     return dict(data=[trace], layout=layout)
 
@@ -567,7 +584,8 @@ list_columns_layout = html.Div([
         html.Div([
             dbc.Card([
                 dbc.CardHeader([
-                    html.H4('Desviaciones', className='text-center text-style'),
+                    html.H4('Desviaciones', 
+                            className='text-center text-style'),
                 ]),
                 dbc.CardBody([
                     dbc.ListGroup(id='list-des'), 
@@ -578,7 +596,8 @@ list_columns_layout = html.Div([
         html.Div([
             dbc.Card([
                 dbc.CardHeader([
-                    html.H4('Fallos de registro/sensor', className='text-center text-style'),
+                    html.H4('Fallos de registro/sensor', 
+                            className='text-center text-style'),
                 ]),
                 dbc.CardBody([
                     dbc.ListGroup(id='list-fal'), 
@@ -592,7 +611,8 @@ def line_plot_layout(tab):
     # Título del gráfico 
     return [
         dbc.Card([
-            dbc.CardHeader([html.H4('Análisis Temporal', className='text-style')], className='px-2 pt-1 p-0'),
+            dbc.CardHeader([html.H4('Análisis Temporal', className='text-style')], 
+                           className='px-2 pt-1 p-0'),
             # Gráfico S1
             dbc.CardBody([
                 dcc.Graph(
@@ -614,7 +634,8 @@ def histo_layout(tab):
     return [
     # Título del histograma de S1
     dbc.Card([
-        dbc.CardHeader([html.H4('Comparativa de operación', className='text-style')], className='px-2 pt-1 p-0'),
+        dbc.CardHeader([html.H4('Comparativa de operación', className='text-style')], 
+                       className='px-2 pt-1 p-0'),
         dbc.CardBody([
             # Histograma de S1
             dcc.Graph(
@@ -639,7 +660,7 @@ def dropdown_cardinfo_layout(tab):
     else:
         columns = columns_s2
         default = 'Flotation Column 02 Level'
-    
+
     # Dropdown selector de señal
     layout = html.Div([
         dbc.Card([
@@ -679,10 +700,13 @@ def get_cards_layout(columns, desviaciones, df):
         i = 1
         for column in columns:
             value = df[column][0]
-            children.append(dbc.ListGroupItem([column, html.B(f' ({value:.2f})', style={"color": colors['text-highlight']})], className='text-center', \
-                                              style={"color": colors['text'], "font-size": size_font_cards, \
-                                                     "font-family": family_font,}, \
-                                                  id='list-item-{}'.format(i)))
+            children.append(dbc.ListGroupItem([column, html.B(f' ({value:.2f})', 
+                                                              style={"color": colors['text-highlight']})], 
+                                              className='text-center', 
+                                              style={"color": colors['text'], 
+                                                     "font-size": size_font_cards, 
+                                                     "font-family": family_font,}, 
+                                              id='list-item-{}'.format(i)))
             i+=1
         return children
     else:
@@ -869,14 +893,14 @@ def product_summary_table(df):
     fail_p = df[df['label']<4].groupby('product').count()['id'].idxmax() # Producto con más fallos
     fail_q = df[df['label']<4].groupby('quality').count()['id'].idxmax() # Calidad con más fallos
     fail_pq = df[df['label']<4].groupby(['product', 'quality']).count()['id'].idxmax() # Producto con más fallos
-    df_table = pd.DataFrame(data=[['Producto + fabricado', 'Producto ' + str(max_p)],\
-                                  ['Calidad + fabricada', 'Calidad ' + str(max_q)],\
-                                  ['Producto/Calidad + fabricada', 'Producto ' + str(max_pq[0])+'/'+\
-                                   'Calidad ' + str(max_pq[1])],
-                                  ['Producto con + fallos', 'Producto ' + str(fail_p)],\
-                                  ['Calidad con + fallos', 'Calidad ' + str(fail_q)],\
-                                  ['Producto/Calidad con + fallos', 'Producto ' + str(fail_pq[0])+'/'+\
-                                   'Calidad ' + str(fail_pq[1])]])
+    df_table = pd.DataFrame(data=[['Producto + fabricado', 'Perfil ' + perfiles[max_p]],
+                                  ['Calidad + fabricada', 'Calidad ' + str(max_q)],
+                                  ['Producto/Calidad + fabricada', 'Perfil ' +
+                                   perfiles[max_pq[0]] + ' / Calidad ' + str(max_pq[1])],
+                                  ['Producto con + fallos', 'Perfil ' + perfiles[fail_p]],
+                                  ['Calidad con + fallos', 'Calidad ' + str(fail_q)],
+                                  ['Producto/Calidad con + fallos', 'Perfil ' + 
+                                   perfiles[fail_pq[0]]+' / Calidad ' + str(fail_pq[1])]])
     product_table = make_table(df_table)
     return product_table
 
@@ -894,6 +918,14 @@ def seccion_summary_table(df):
 # Devuelve el layout de los tabs de reports
 def summary_tab_layout(tab, df, single):
     
+    product_options = [{"label": f"Perfil {perfiles[product]}", "value": product}
+                             for product in np.sort(df['product'].unique())]
+    product_options.append({"label": "Todos", "value": -1})
+    
+    quality_options = [{"label": f"Calidad {quality}", "value": quality} 
+                       for quality in np.sort(df['quality'].unique())]
+    quality_options.append({"label": "Todos", "value": -1})
+    
     if single:
         hcontainer = '100%'
     else:
@@ -904,32 +936,31 @@ def summary_tab_layout(tab, df, single):
         data_bar, layout_bar = bar_graph_product_summary(df, 'product')
         titulo_bar_plot = 'Evaluación Anomalias por producto'
         titulo_line_plot = 'Estabilidad temporal del proceso por producto'
-        data_line, layout_line = liner_graph_product_summary(df, df['product'].unique(),\
-                                                df['quality'].unique(), 'month')    
+        data_line, layout_line = liner_graph_product_summary(df, df['product'].unique()[0],\
+                                                df['quality'].unique()[0], 'day')    
         pq_selector = [
             dbc.FormGroup([
-                dbc.Checklist(
-                    options=[{"label": f"Product {product}", "value": product}\
-                             for product in np.sort(df['product'].unique())],                
-                    value=df['product'].unique(),
+                dcc.Dropdown(
+                    options=product_options,                
+                    value=-1,#df['product'].unique()[0],
                     id="checklist-product",
+                    style={'color': colors['text-dropdown'],},
                 ),
             ]),
             dbc.FormGroup([
-                dbc.Checklist(
-                    options=[{"label": f"Calidad {quality}", "value": quality}\
-                             for quality in np.sort(df['quality'].unique())],                
-                    value=df['quality'].unique(),
+                dcc.Dropdown(
+                    options= quality_options,       
+                    value=-1,
                     id="checklist-quality",
-                    switch=True,
+                    style={'color': colors['text-dropdown'],},
                 ),
             ]),
             dbc.FormGroup([
                 dbc.RadioItems(
-                    options=[{"label": "Month", "value": "month"}, 
-                             {"label": "Day", "value": "day"}],                
-                    value="month",
-                    id="checklist-xaxis",
+                    options=[{"label": "Day", "value": "day"},
+                        {"label": "Month", "value": "month"},],                
+                    value="day",
+                    id=f"checklist-xaxis-product",
                 ),
             ]),
         ]
@@ -938,15 +969,24 @@ def summary_tab_layout(tab, df, single):
         data_bar, layout_bar = bar_graph_seccions_summary(df)
         titulo_bar_plot = 'Evaluación Anomalias por seccion'
         titulo_line_plot = 'Estabilidad temporal del proceso por seccion'
-        data_line, layout_line = liner_graph_seccions_summary(df, '1')
+        data_line, layout_line = liner_graph_seccions_summary(df, '1', 'day')
         pq_selector = [
             dbc.FormGroup([
                 # dbc.Label("Selector de seccion"),
-                dbc.RadioItems(
+                dcc.Dropdown(
                     options=[{"label": f"Seccion {seccion}", "value": seccion}\
                              for seccion in [1,2,3]],                
                     value=1,
                     id="checklist-seccion",
+                    style={'color': colors['text-dropdown'],},
+                ),
+            ]),
+            dbc.FormGroup([
+                dbc.RadioItems(
+                    options=[{"label": "Day", "value": "day"},
+                        {"label": "Month", "value": "month"},],                
+                    value="day",
+                    id=f"checklist-xaxis-seccion",
                 ),
             ]),
         ]         
@@ -995,9 +1035,9 @@ def summary_tab_layout(tab, df, single):
                                     layout = layout_line,
                                 ),
                                 style={"height": '100%'},
-                                className='col-10'
+                                className='col-9'
                             ),
-                            html.Div(pq_selector,className='col-2 pt-4 h-100'),
+                            html.Div(pq_selector,className='col-3 pt-4 h-100'),
                         ], className='row h-100 w-100')
                     ], className='h-100 py-1 px-1')
                 ], className='h-100')
@@ -1032,7 +1072,7 @@ def bar_graph_product_summary(df, column):
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
-        margin={"t":30},
+        margin={"t":30, "r":15, "l": 35},
         xaxis={
             "tickangle": 30,
         },
@@ -1041,15 +1081,22 @@ def bar_graph_product_summary(df, column):
     return [trace, trace2], layout
 
 def liner_graph_product_summary(df, product, quality, xaxis):
-    if xaxis == 'month':
-        df['month'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
-        todas = df[(df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('month').count()['id']
-        buenas = df[(df['label']>=4) & (df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('month').count()['id']
+    if product == -1:
+        fproduct = df['product'].isin(df['product'].unique())
     else:
-        df['date_notime'] = df['date'].apply(lambda x: x.date())
-        todas = df[(df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('date_notime').count()['id']
-        buenas = df[(df['label']>=4) & (df['product'].isin(product)) & (df['quality'].isin(quality))].groupby('date_notime').count()['id']
+        fproduct = df['product'] == product
+    if quality == -1:
+        fquality = df['quality'].isin(df['quality'].unique())
+    else:
+        fquality = df['quality'] == quality
         
+    if xaxis == 'month':
+        df['date_groupby'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
+    else:
+        df['date_groupby'] = df['date'].apply(lambda x: x.date())
+        
+    todas = df[(fproduct) & (fquality)].groupby('date_groupby').count()['id']
+    buenas = df[(df['label']>=4) & (fproduct) & (fquality)].groupby('date_groupby').count()['id']  
     trace = dict(
         type='line',
         x = todas.index,
@@ -1059,7 +1106,7 @@ def liner_graph_product_summary(df, product, quality, xaxis):
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
-        margin={"t":30},
+        margin={"t":30, "r":15, "l": 35},
         xaxis={
             "tickangle": 30,
         },
@@ -1114,7 +1161,7 @@ def bar_graph_seccions_summary(df):
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
-        margin={"t":30},
+        margin={"t":30, "r":15, "l": 35},
         xaxis={
             "tickangle": 30,
         },
@@ -1123,10 +1170,15 @@ def bar_graph_seccions_summary(df):
     
     return [trace, trace3, trace2], layout
 
-def liner_graph_seccions_summary(df, seccion):
-    df['month'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
-    todas = df.groupby('month').count()['id']
-    buenas = df[(df[f'label_S{seccion}']>0)].groupby('month').count()['id']
+def liner_graph_seccions_summary(df, seccion, xaxis):
+    if xaxis == 'month':
+        df['date_groupby'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
+    else:
+        df['date_groupby'] = df['date'].apply(lambda x: x.date())
+        
+    todas = df.groupby('date_groupby').count()['id']
+    buenas = df[(df[f'label_S{seccion}']>0)].groupby('date_groupby').count()['id']
+    
     trace = dict(
         type='line',
         x = todas.index,
@@ -1136,7 +1188,7 @@ def liner_graph_seccions_summary(df, seccion):
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
-        margin={"t":30},
+        margin={"t":30, "r":15, "l": 35},
         xaxis={
             "tickangle": 30,
         },
@@ -1145,21 +1197,6 @@ def liner_graph_seccions_summary(df, seccion):
         },
     )
     return trace, layout
-
-reports_page_layout1 = html.Div([
-        dbc.Tabs([
-            dbc.Tab(label='Resumen', tab_id='all'),
-        ], id='summary-tabs', active_tab='all', className='Tabs1 invisible', style=dict(height='0')),
-        html.Div([
-            dbc.Card([
-                dbc.CardHeader([html.H5('Selector de fechas', className='py-0 text-style')], className='px-2 pt-1 p-0'),
-                dbc.CardBody([
-                    selector_fecha
-                ], className='h-100 pb-2'),
-            ], className='h-100')
-        ], className='px-3 pt-2', style={"height": "22%"}),
-        html.Div(id='summary-tab-content', style=dict(height='78%'))
-    ], className='h-100') 
 
 #%%###########################################################################
 #                              03. LAYOUT                                    #
@@ -1177,7 +1214,7 @@ navbar = dbc.Navbar([
             ),
             dbc.Nav([
                 dbc.NavItem(dbc.NavLink("Home", href="/", style={"color":colors['text']})),
-                dbc.NavItem(dbc.NavLink("Reports", href="/reports", style={"color":colors['text']})),
+                dbc.NavItem(dbc.NavLink("Reports", href="/reports", style={"color":colors['text']}, id='report_page_nav')),
             ], className=''),
     ], className='lg py-1 px-1', color=colors['navbar'], style={"height": '5vh'})
     
@@ -1239,8 +1276,8 @@ home_page_layout = html.Div([
 
 # Callback que modifica el contenido de la página en función del Tab activo.
 @app.callback(
-    [Output('selector-fechas-container', 'style'), Output('button-container', 'style'), 
-     Output('bottom_seccion_hist', 'style'), Output('bottom_seccion_real', 'style'),
+    [Output('selector-fechas-container', 'className'), Output('button-container', 'className'), 
+     Output('bottom_seccion_hist', 'className'), Output('bottom_seccion_real', 'className'),
      Output('plant-plot-container', 'style'), Output('filters-container', 'style')],
     [Input("home-page-tabs", "active_tab"), Input('calendar-heatmap', 'clickData')],
 )
@@ -1248,17 +1285,17 @@ def render_tab_content(tab, clicked):
     ctx = dash.callback_context
     clicked = ctx.triggered[0]['prop_id'].split('.')[0]
     if (tab == 'hist') or (clicked == 'calendar-heatmap'):
-        fechas = dict(height='100%', visibility='visible')
-        button = dict(height='0%', visibility='hidden')
-        bottom_seccion_real = dict(height='0%', visibility='hidden')
-        bottom_seccion_hist =  dict(height='100%', visibility='visible')
+        fechas = 'h-100' #dict(height='100%', visibility='visible')
+        button = 'invisible' #dict(height='0%', visibility='hidden')
+        bottom_seccion_real = 'invisible' #dict(height='0%', visibility='hidden')
+        bottom_seccion_hist =  'h-100' #dict(height='100%', visibility='visible')
         plant_plot_graph_h = dict(height='66%')
         plant_plot_filter_h = dict(height='34%')
     else:
-        button = dict(height='100%', visibility='visible')
-        fechas = dict(height='0%', visibility='hidden')
-        bottom_seccion_real = dict(height='100%', visibility='visible')
-        bottom_seccion_hist =  dict(height='0%', visibility='hidden')
+        button = 'row w-100 pr-3 pb-1 h-100' #dict(height='100%', visibility='visible')
+        fechas = 'invisible' #dict(height='0%', visibility='hidden')
+        bottom_seccion_real = 'h-100'#dict(height='100%', visibility='visible')
+        bottom_seccion_hist =  'invisible'#dict(height='0%', visibility='hidden')
         plant_plot_graph_h = dict(height='88%')
         plant_plot_filter_h = dict(height='12%')
     return fechas, button, bottom_seccion_hist, bottom_seccion_real, plant_plot_graph_h, plant_plot_filter_h
@@ -1487,12 +1524,6 @@ seccions_page_layout = html.Div([
             #Dropdown + info card
             html.Div(
                 dropdown_cardinfo_layout('s1')
-                # dbc.Card([
-                #     dbc.CardHeader([html.H5('Información + filtros', className='py-0 text-style')], className='px-2 pt-1 p-0'),
-                #     dbc.CardBody([
-                #         dropdown_cardinfo_layout('s1')
-                #     ], className='h-100 px-2 py-2'),
-                # ], className='h-100')
             , className='col-2 h-100 px-1', id='dropdown_card_info'),      
             
             # Plot señal S1
@@ -1602,11 +1633,40 @@ def gen_signal_s1(column, active_tab, id_data):
 
 # Página con los informes por seccion y producto
 reports_page_layout = html.Div([
+    html.Div([
+        dbc.Tabs([
+            dbc.Tab(label='Resumen', tab_id='all'),
+        ], id='summary-tabs', active_tab='all', className='Tabs1 invisible', style=dict(height='0')),
+        html.Div([
+            dbc.Card([
+                dbc.CardHeader([html.H5('Selector de fechas', className='py-0 text-style')], className='px-2 pt-1 p-0'),
+                dbc.CardBody([
+                    html.Div([selector_fecha], className='h-100 col-11 m-0'),
+                    html.Div([
+                        html.I(className="fas fa-caret-up fa-2x text-center col-2 invisible"),
+                        html.Div([
+                            html.I(id="hour-min-up", n_clicks=0, n_clicks_timestamp = -1,
+                                className="far fa-save fa-3x text-center col-1 align-middle",
+                                style={"cursor": "pointer"}),
+                            dcc.DatePickerSingle(date=datetime.date(date_max), display_format='DD-MM-YYYY',
+                                                 className='invisible h-100 col-2', persistence=True),
+                        ], className='row h-50 pb-2 m-0'),
+                    ], className='h-100 col-1  m-0 pl-5')
+                ], className='h-100 pb-2 row m-0'),
+            ], className='h-100')
+        ], className='px-3 pt-2', style={"height": "22%"}),
+        html.Div(id='summary-tab-content', style=dict(height='78%'))
+    ], className='h-100'),
+    
+    # INVISIBLE
+    dcc.Graph(
+        id='calendar-heatmap',
+        className='invisible'
+    ),
     dbc.Tabs([
-            dbc.Tab(label='Resumen por producto', tab_id='products'), 
-            dbc.Tab(label='Resumen por seccion', tab_id='seccions'),
-    ], id='summary-tabs', active_tab='products', className='invisible', style={"height": 0}),
-    reports_page_layout1,
+        dbc.Tab(label='Tiempo Real', tab_id='real'),
+        dbc.Tab(label='Historico', tab_id='hist'),
+    ], className='invisible', id='home-page-tabs'), 
 ], className='h-100') 
 
 #%%###########################################################################
@@ -1616,7 +1676,7 @@ reports_page_layout = html.Div([
 # Callback que modifica el contenido de la página en función del Tab activo.
 @app.callback(
     Output("summary-tab-content", "children"),
-    [Input("summary-tabs", "active_tab"), Input("search-button", "n_clicks")],
+    [Input("summary-tabs", "active_tab"), Input('report_page_nav', 'n_clicks')],
     [State("date-min", "date"), State("date-max", "date"), State('hour-min', 'value'),
      State('hour-max', 'value'), State('min-min', 'value'), State('min-max', 'value')],
 )
@@ -1638,7 +1698,7 @@ def render_summary_tab_content(active_tab, n_clicks, datemin, datemax, hourmin, 
 @app.callback(
     Output("time-plot-products", "figure"),
     [Input("checklist-product", "value"), Input("checklist-quality", "value"), 
-     Input("search-button", "n_clicks"), Input("checklist-xaxis", "value"),
+     Input("search-button", "n_clicks"), Input("checklist-xaxis-product", "value"),
      Input("home-page-tabs", "active_tab")],
     [State("date-min", "date"), State("date-max", "date"), State('hour-min', 'value'),
      State('hour-max', 'value'), State('min-min', 'value'), State('min-max', 'value')],
@@ -1656,17 +1716,17 @@ def checklist_product_trace(ckd_product, ckd_quality, n_clicks, xaxis, active_ta
 @app.callback(
     Output("time-plot-seccions", "figure"),
     [Input("checklist-seccion", "value"), Input("search-button", "n_clicks"),
-     Input("home-page-tabs", "active_tab")],
+     Input("checklist-xaxis-seccion", "value"), Input("home-page-tabs", "active_tab")],
     [State("date-min", "date"), State("date-max", "date"), State('hour-min', 'value'),
      State('hour-max', 'value'), State('min-min', 'value'), State('min-max', 'value')],
 )
-def checklist_seccion_trace(ckd_seccion, n_clicks, active_tab_hp, datemin, datemax, hourmin, hourmax, minmin, minmax):
+def checklist_seccion_trace(ckd_seccion, n_clicks, xaxis, active_tab_hp, datemin, datemax, hourmin, hourmax, minmin, minmax):
     datemin = "'" + datemin + " " + str(hourmin).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
     datemax = "'" + datemax + " " + str(hourmax).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
     # Consulta a postgreSQL que devuelve
     df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)  
     
-    trace, layout = liner_graph_seccions_summary(df, ckd_seccion)
+    trace, layout = liner_graph_seccions_summary(df, ckd_seccion, xaxis)
     return dict(data=[trace], layout=layout)
 #%%###########################################################################
 #                              07. MAIN                                      #
