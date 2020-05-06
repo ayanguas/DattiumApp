@@ -24,10 +24,20 @@ import calendar
 #                            01. CONFIGURACIÓN                               #
 ##############################################################################
 
-# Configurar ip para acceder a los datos de postgreSQL
-postgre_ip = '127.0.0.1'
-
 dark = True
+
+# Cambiar a False para conectarse a un servidor remoto y modificar 
+# la ip con la dirección del servidor
+local = True
+
+if not local:
+    postgre_ip = 'dattiumappdb.cxlqgh9vjio0.us-east-2.rds.amazonaws.com'
+    user = 'postgres'
+    pswrd = 'D4ttium1'
+else:
+    postgre_ip = '127.0.0.1'
+    user = 'test'
+    pswrd = 'test123'
 
 # font_awesome1 = "//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css"
 font_awesome2 = "//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css"
@@ -47,7 +57,7 @@ else:
     navbar_image = "logo-dattium-navbar.png"
     
 # Conexion a la BBDD postgreSQL con el usuario test, contraseña test123 y en la BBDD DattiumApp        
-server_conn = create_engine('postgresql://test:test123@{}:5432/DattiumApp'.format(postgre_ip))
+server_conn = create_engine('postgresql://{}:{}@{}:5432/DattiumApp'.format(user, pswrd, postgre_ip))
 # Extraemos en un DF todos los datos de la BBDD
 df_raw = pd.read_sql(('SELECT * FROM signals'), server_conn)
 # Array con el nombre de las señales que vamos a utilizar
@@ -676,6 +686,7 @@ def dropdown_cardinfo_layout(tab):
                         'color': colors['text-dropdown'],
                     },
                 ),
+                html.P("-: -", className='card-text text-left pt-3', id='signal_info'),
             ], className='h-100'),
         ], className='h-100'),
     ], className='h-100'),
@@ -726,17 +737,46 @@ def get_card_info_layout(id_data, column):
     df = pd.read_sql('SELECT * FROM signals WHERE id={}'.format(id_data), server_conn)
     spaces = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
     if len(df)==1:
-        text = dcc.Markdown('''**ID**: {} {} **Date**: {} {} **{}**: {:.2f}  '''.format(df['id'].iloc[0], spaces, df['date'].iloc[0],
-                            spaces, column, df[column].iloc[0]), style={"color": colors['text'], 
-                                                                "font-size": size_font_cards, 
-                                                                "font-family": family_font,})
+        text = dcc.Markdown('''**ID**: {} {} **Producto**: {} {} **Calidad**:
+                               {} {} **Fecha**: {}'''.format(df['id'].iloc[0], spaces, df['product'].iloc[0],
+                            spaces, df['quality'].iloc[0], spaces, df['date'].iloc[0]), 
+                            style={"color": colors['text'], 
+                                    "font-size": size_font_cards, 
+                                    "font-family": family_font,})
     else:
-        text = dcc.Markdown('''**ID**: - {} **Date**: - {} **-**: -  '''.format(spaces, spaces), 
-                            style={"color": colors['text'], "font-size": size_font_cards, "font-family": family_font,})              
+        text = dcc.Markdown('''**ID**: - {} **Producto**: - {} **Calidad**:
+                               - {} **Fecha**: - {}'''.format(spaces, spaces, 
+                               spaces, spaces), 
+                            style={"color": colors['text'], "font-size": size_font_cards, "font-family": family_font,})          
+    return text
+
+# Función que devuelve el texto que ira dentro del recuadro de información de la señal seleccionada page-2
+def get_signal_info(id_data, column):
+    df = pd.read_sql('SELECT * FROM signals WHERE id={}'.format(id_data), server_conn)
+    df_all = pd.read_sql(('SELECT * FROM signals WHERE id>{} AND id<={}'.format(id_data-500, id_data+500)), server_conn)
+    mean = df_all[column].mean()
+    std = 2*df_all[column].std()
+    if len(df)==1:
+        text = dcc.Markdown('''**{}**: {:.2f}  
+                            **Valor Medio**: {:.2f}  
+                            **Limite superior**: {:.2f}  
+                            **Limite inferior**: {:.2f}'''.format(column, df[column].iloc[0], 
+                            mean, mean + std, mean - std),
+                            style={"color": colors['text'], 
+                                    "font-size": size_font_cards, 
+                                    "font-family": family_font,})
+    else:
+        text = dcc.Markdown('''**-**: -  
+                            **Valor Medio**: -  
+                            **Limite superior**: -  
+                            **Limite inferior**: -''', 
+                            style={"color": colors['text'], "font-size": size_font_cards, "font-family": family_font,})        
     return text
 
 # Función que devuelve el trace y layout del gráfico de la señal
 def get_signal_plot(df, column, id_data):
+    mean = df[column].mean()
+    std = 2*df[column].std()
     # Signal Plot S1
     trace = dict(
         type="scatter",
@@ -787,6 +827,38 @@ def get_signal_plot(df, column, id_data):
             "gridcolor": colors["grid"],
             "nticks": 10
         },
+        shapes=[
+            {
+                'type':"line",
+                # 'xref':df[df['id']==id_data['id']][column].iloc[0],
+                'xref':'paper',
+                'x0':0,
+                'y0':mean - std,
+                'x1':1,
+                'y1':mean - std, 
+                'line':dict(
+                    color=colors['plantplot-l-red'],
+                    width=4,
+                    dash="dashdot",
+            
+                ),
+            },
+            {
+                'type':"line",
+                # 'xref':df[df['id']==id_data['id']][column].iloc[0],
+                'xref':'paper',
+                'x0':0,
+                'y0':mean + std,
+                'x1':1,
+                'y1':mean + std, 
+                'line':dict(
+                    color=colors['plantplot-l-red'],
+                    width=4,
+                    dash="dashdot",
+            
+                ),
+            },
+        ],
     )
     return trace, trace2, layout
 
@@ -794,6 +866,8 @@ def get_signal_plot(df, column, id_data):
 def get_histogram(df, column, id_data):
     # Datos historicos del histograma S1
     df_hist = pd.DataFrame(df_raw).drop(df.index)
+    mean = df[column].mean()
+    std = 2*df[column].std()
     trace = dict(
         type="histogram",
         name='Último año',
@@ -861,7 +935,36 @@ def get_histogram(df, column, id_data):
                     width=4,
             
                 ),
-                # 'layer':'below'
+            },
+            {
+                'type':"line",
+                # 'xref':df[df['id']==id_data['id']][column].iloc[0],
+                'yref':'paper',
+                'x0':mean - std,
+                'y0':0,
+                'x1':mean - std, 
+                'y1':0.95,
+                'line':dict(
+                    color=colors['plantplot-l-red'],
+                    width=4,
+                    dash="dashdot",
+            
+                ),
+            },
+            {
+                'type':"line",
+                # 'xref':df[df['id']==id_data['id']][column].iloc[0],
+                'yref':'paper',
+                'x0':mean + std,
+                'y0':0,
+                'x1':mean + std,
+                'y1':0.95,
+                'line':dict(
+                    color=colors['plantplot-l-red'],
+                    width=4,
+                    dash="dashdot",
+            
+                ),
             }
         ],
     )
@@ -1500,7 +1603,7 @@ seccions_page_layout = html.Div([
                 ], className='h-25 pb-2'),
                 # Lista de señales con desviaciones/fallos
                 dbc.Card([
-                    dbc.CardHeader([html.H5('Variables con desviación o errores', className='py-0 text-style')], className='px-2 pt-1 p-0'),
+                    dbc.CardHeader([html.H5('Señales con desviación o errores', className='py-0 text-style')], className='px-2 pt-1 p-0'),
                     dbc.CardBody([
                         list_columns_layout
                     ], className='h-100')
@@ -1561,18 +1664,26 @@ def render_seccion_tab_content(active_tab):
     return [columns, default, app.get_asset_url(img)]
 
 # Callback que actualiza la targeta de información de ID S1
-@app.callback(Output('card_info_id', 'children'),
+@app.callback([Output('card_info_id', 'children'), Output('signal_info', 'children')],
               [Input('store-id-clicked', 'modified_timestamp'), Input("signal-dropdown", "value"),\
                Input("seccion-tabs", "active_tab")],
               [State('store-id-clicked', 'data')])
 def modify_info_card_s1(timestamp, column, active_tab, id_data):  
     spaces = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-    return_data = dcc.Markdown('''**ID**: - {} **Date**: - {} **-**: -  '''.format(spaces, spaces), 
-                            style={"color": colors['text'], "font-size": size_font_cards, "font-family": family_font,})      
+    return_data = dcc.Markdown('''**ID**: - {} **Producto**: - {} **Calidad**:
+                               - {} **Fecha**: - {}'''.format(spaces, spaces, 
+                               spaces, spaces), 
+                            style={"color": colors['text'], "font-size": size_font_cards, "font-family": family_font,})   
+    return_data_signal = dcc.Markdown('''**-**: -  
+                            **Valor Medio**: -  
+                            **Limite superior**: -  
+                            **Limite inferior**: -''', 
+                            style={"color": colors['text'], "font-size": size_font_cards, "font-family": family_font,})
     if id_data is not None:
         if 'id' in id_data.keys():
             return_data = get_card_info_layout(id_data['id'], column)
-    return return_data
+            return_data_signal = get_signal_info(id_data['id'], column)
+    return return_data, return_data_signal
     
 # Callback que actualiza la lista de desviaciones de S1
 @app.callback(Output('list-des', 'children'),
