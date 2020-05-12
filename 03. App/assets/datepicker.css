@@ -51,4 +51,23 @@
     line-height: 0 !important,
 }
 
+.green-dot {
+  height: 0.2em;
+  width: 0.2em;
+  background-color: #59C159;
+  top: 50%;
+  left: 30%;
+  border-radius: 50%;
+  position: absolute;
+  
+}
 
+.red-dot {
+  height: 25px;
+  width: 25px;
+  background-color: #EC5550;
+  border-radius: 50%;
+  top: 50%;
+  left: 70%;
+  position: absolute;
+}

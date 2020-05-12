@@ -31,7 +31,7 @@ dark = True
 local = True
 
 if not local:
-    postgre_ip = 'dattiumappdb.cxlqgh9vjio0.us-east-2.rds.amazonaws.com'
+    postgre_ip = 'dattiumapp.c1hwki2zbgvt.eu-west-3.rds.amazonaws.com'
     user = 'postgres'
     pswrd = 'D4ttium1'
 else:
@@ -87,6 +87,7 @@ if dark:
     pp_bg_red = '#653434'
     pp_mk_green = '#59C159'
     pp_mk_red = '#EC5550'
+    pp_ma_grey = '#AAAAAA'
     chm_good = '#DDDDDD'
     chm_dev = '#e8b68b'
     chm_fail = '#e04f38'
@@ -98,6 +99,7 @@ else:
     pp_bg_red = '#F9E9E0'
     pp_mk_green = '#76B7B2'
     pp_mk_red = '#E15759'
+    pp_ma_grey = '#DDDDDD'
     chm_green = '#EEEEEE'
     chm_dev = '#E8C2A0'
     chm_fail = '#E06E5D'
@@ -114,6 +116,7 @@ colors = {
     'plantplot-l-red': '#B31919', # Plantplot Line Red #E46B6B
     'plantplot-mk-green': pp_mk_green, # Plantplot Marker Green
     'plantplot-mk-red': pp_mk_red, # Plantplot Merker Red
+    'plantplot-ma-grey': pp_ma_grey, # Plantplot Moving Average line grey
     'chm-good': chm_good, # Calendar HeatMap Green
     'chm-dev': chm_dev, # Calendar HeatMap Yellow
     'chm-fail': chm_fail, # Calendar HeatMap Red
@@ -285,7 +288,88 @@ def chm_card_content(card):
         html.Div(data[card]['third'], style={"font-size": "1rem", "color": colors['text']}),
     ], className='my-auto')
 
-
+# Calendar HeatMap  Figure Layout and Traces
+def calendar_heatmap(df, seccion):
+    if seccion == 'S1':
+        label = '_S1'
+        label_max = 2
+    elif seccion == 'S2':
+        label = '_S2'
+        label_max = 2
+    else:
+        label = ''
+        label_max = 6
+        
+    df['day'] = [datetime.date(fecha) for fecha in df['date']]
+    
+    d1 = datetime.date(df['date'].min())
+    d2 = datetime.date(df['date'].max())
+    delta = d2 - d1
+    num_months = (d2.year - d1.year) * 12 + (d2.month - d1.month)
+    
+    dates_in_year = [d1 + timedelta(i) for i in range(delta.days+1)] #gives me a list with datetimes for each day a year
+    weekdays_in_year = [i.weekday() for i in dates_in_year] #gives [0,1,2,3,4,5,6,0,1,2,3,4,5,6,…] (ticktext in xaxis dict translates this to weekdays
+    weeknumber_of_dates = [i.strftime("%Gww%V") for i in dates_in_year] #gives [1,1,1,1,1,1,1,2,2,2,2,2,2,2,…] name is self-explanatory
+    z = np.array([0 if x<label_max*0.8 else 1 if x<label_max*0.85 else 2 
+                  for x in df.groupby('day').mean()[f'label{label}'].values]) #df.groupby('day').mean()[f'label{label}'] 
+    text = [str(i) for i in dates_in_year] #gives something like list of strings like '2018-01-25' for each date. Used in data trace to _ta good hovertext.
+    
+    xtickvals = [d1.strftime("%Gww%V")]
+    xticktext = [d1.strftime("%b")]
+    month = d1.month + 1
+    year = d1.year
+    for i in range(1, num_months):
+        if month > 12:
+            month=1
+            year+=1
+        fecha = datetime(year, month, 1)
+        xtickvals = np.append(xtickvals, fecha.strftime("%Gww%V"))
+        xticktext = np.append(xticktext, fecha.strftime("%b"))
+        month += 1
+    
+    trace = dict(
+        type='heatmap',
+        x = weeknumber_of_dates,
+        y = weekdays_in_year,
+        z = z,
+        text=text,
+        hoverinfo="text+z",
+        xgap=3, # this
+        ygap=3, # and this is used to make the grid-like apperance
+        zmin=0,
+        zmax=2,
+        showscale=True,
+        colorscale=[(0, colors['chm-fail']),   (0.33, colors['chm-fail']),
+                    (0.33, colors['chm-dev']), (0.66, colors['chm-dev']),
+                    (0.66, colors['chm-good']),  (1.00, colors['chm-good'])],
+        colorbar=dict(
+            title="Anomalías",
+            # titleside="top",
+            tickmode="array",
+            tickvals=[0.33, 1, 1.66],
+            ticktext=["Muchas", "Algunas", "Pocas"],
+            ticks="outside"
+        ),
+    )
+    layout = dict(
+        yaxis=dict(
+            showline = False, showgrid = False, zeroline = False,
+            tickmode="array",
+            ticktext=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], 
+            tickvals=[0,1,2,3,4,5,6],
+            ticks = '',
+        ),
+        xaxis=dict(
+            showline = False, showgrid = False, zeroline = False,
+            ticktext= xticktext,
+            tickvals = xtickvals,
+        ),
+        font={"color": colors['text'], "size": size_font, "family": family_font,},
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        margin = dict(t=40, b=40, r=40, l=40),
+    )
+    return dict(data=[trace], layout=layout)
 
 # Calendar HeatMap Layout
 calendar_heatmap_layout = html.Div([
@@ -294,12 +378,12 @@ calendar_heatmap_layout = html.Div([
         dbc.CardBody([
             dcc.Graph(
                 id='calendar-heatmap',
-                figure=dict(
-                    layout=dict(
-                        plot_bgcolor=colors["graph-bg"],
-                        paper_bgcolor=colors["graph-bg"],
-                    )
-                ),
+                figure = calendar_heatmap(df_raw, 'general'),
+                    # layout=dict(
+                    #     plot_bgcolor=colors["graph-bg"],
+                    #     paper_bgcolor=colors["graph-bg"],
+                    # )
+                
                 # figure=calendar_heatmap(df, seccion),
                 className = 'col-12',
                 style=dict(
@@ -409,6 +493,8 @@ def get_plant_plot(df):
     datemin1 = df['date'].min() - timedelta(hours=2)
     datemax1 = df['date'].max() + timedelta(hours=2)
     
+    moving_average = df[column].rolling(5).mean()
+    
     # Scatter plot con del label de comportamiento de la planta
     trace = dict(
         type="scatter",
@@ -426,6 +512,15 @@ def get_plant_plot(df):
             color=[colors['plantplot-mk-green'] if x > 3 else colors['plantplot-mk-red'] for x in df['label']],
             # size=10,
         ),
+    )
+        
+    trace2 = dict(
+        type="scatter",
+        x=df['date'],
+        y=moving_average,
+        line={"color": colors['plantplot-ma-grey']},
+        mode="line",
+        name='Moving average 5',
     )
         
     # Opciones de estilo del gráfico
@@ -495,97 +590,16 @@ def get_plant_plot(df):
             )
         ],
     )
-    return trace, layout
+    return trace, trace2, layout
 
 def return_weeknumber(fecha):
     return fecha.strftime("%Gww%V")
 
-# Calendar HeatMap  Figure Layout and Traces
-def calendar_heatmap(df, seccion):
-    if seccion == 'S1':
-        label = '_S1'
-        label_max = 2
-    elif seccion == 'S2':
-        label = '_S2'
-        label_max = 2
-    else:
-        label = ''
-        label_max = 6
-        
-    df['day'] = [datetime.date(fecha) for fecha in df['date']]
-    
-    d1 = datetime.date(df['date'].min())
-    d2 = datetime.date(df['date'].max())
-    delta = d2 - d1
-    num_months = (d2.year - d1.year) * 12 + (d2.month - d1.month)
-    
-    dates_in_year = [d1 + timedelta(i) for i in range(delta.days+1)] #gives me a list with datetimes for each day a year
-    weekdays_in_year = [i.weekday() for i in dates_in_year] #gives [0,1,2,3,4,5,6,0,1,2,3,4,5,6,…] (ticktext in xaxis dict translates this to weekdays
-    weeknumber_of_dates = [i.strftime("%Gww%V") for i in dates_in_year] #gives [1,1,1,1,1,1,1,2,2,2,2,2,2,2,…] name is self-explanatory
-    z = np.array([0 if x<label_max*0.8 else 1 if x<label_max*0.85 else 2 
-                  for x in df.groupby('day').mean()[f'label{label}'].values]) #df.groupby('day').mean()[f'label{label}'] 
-    text = [str(i) for i in dates_in_year] #gives something like list of strings like '2018-01-25' for each date. Used in data trace to _ta good hovertext.
-    
-    xtickvals = [d1.strftime("%Gww%V")]
-    xticktext = [d1.strftime("%b")]
-    month = d1.month + 1
-    year = d1.year
-    for i in range(1, num_months):
-        if month > 12:
-            month=1
-            year+=1
-        fecha = datetime(year, month, 1)
-        xtickvals = np.append(xtickvals, fecha.strftime("%Gww%V"))
-        xticktext = np.append(xticktext, fecha.strftime("%b"))
-        month += 1
-    
-    trace = dict(
-        type='heatmap',
-        x = weeknumber_of_dates,
-        y = weekdays_in_year,
-        z = z,
-        text=text,
-        hoverinfo="text+z",
-        xgap=3, # this
-        ygap=3, # and this is used to make the grid-like apperance
-        zmin=0,
-        zmax=2,
-        showscale=True,
-        colorscale=[(0, colors['chm-fail']),   (0.33, colors['chm-fail']),
-                    (0.33, colors['chm-dev']), (0.66, colors['chm-dev']),
-                    (0.66, colors['chm-good']),  (1.00, colors['chm-good'])],
-        colorbar=dict(
-            title="Anomalías",
-            # titleside="top",
-            tickmode="array",
-            tickvals=[0.33, 1, 1.66],
-            ticktext=["Muchas", "Algunas", "Pocas"],
-            ticks="outside"
-        ),
-    )
-    layout = dict(
-        yaxis=dict(
-            showline = False, showgrid = False, zeroline = False,
-            tickmode="array",
-            ticktext=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], 
-            tickvals=[0,1,2,3,4,5,6],
-            ticks = '',
-        ),
-        xaxis=dict(
-            showline = False, showgrid = False, zeroline = False,
-            ticktext= xticktext,
-            tickvals = xtickvals,
-        ),
-        font={"color": colors['text'], "size": size_font, "family": family_font,},
-        plot_bgcolor=colors["graph-bg"],
-        paper_bgcolor=colors["graph-bg"],
-        margin = dict(t=40, b=40, r=40, l=40),
-    )
-    return dict(data=[trace], layout=layout)
+
 
 
 #%%###########################################################################
-#                     02_02. FUNCIONES (SECCION PAGE)                        #
+#                     02_02. FUNCIONES  PAGE)                        #
 ##############################################################################
 
 # Layout con las listas de desviacion y fallos de registro/sensor S1
@@ -1312,11 +1326,11 @@ navbar = dbc.Navbar([
                 # Use row and col to control vertical alignment of logo / brand
                 html.Img(src=app.get_asset_url(navbar_image),\
                                           height=navbar_logo_size),
-                href="/",
+                href="/home",
                 className='float-right col-2 h-100'
             ),
             dbc.Nav([
-                dbc.NavItem(dbc.NavLink("Home", href="/", style={"color":colors['text']})),
+                dbc.NavItem(dbc.NavLink("Home", href="/home", style={"color":colors['text']})),
                 dbc.NavItem(dbc.NavLink("Reports", href="/reports", style={"color":colors['text']}, id='report_page_nav')),
             ], className=''),
     ], className='lg py-1 px-1', color=colors['navbar'], style={"height": '5vh'})
@@ -1345,7 +1359,9 @@ app.layout = html.Div([
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
-    if pathname == '/seccions':
+    if pathname == '/home':
+        return home_page_layout
+    elif pathname == '/seccions':
         return seccions_page_layout
     elif pathname == '/reports':
          return reports_page_layout
@@ -1364,7 +1380,7 @@ home_page_layout = html.Div([
     dbc.Tabs([
         dbc.Tab(label='Tiempo Real', tab_id='real'),
         dbc.Tab(label='Historico', tab_id='hist'),
-    ], id='home-page-tabs'), 
+    ], id='home-page-tabs', active_tab='real'), 
     html.Div(home_layout, id='home-page-content', style={"height": "calc(100% - 40px)"}),
     dcc.Interval(
         id="signal-update",
@@ -1422,14 +1438,14 @@ def gen_signal_hist(n_clicks, interval, tab, datemin, datemax, hourmin, hourmax,
         datemax = "'" + datemax + " " + str(hourmax).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
         # Consulta a postgreSQL que devuelve
         df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)
-        trace, layout = get_plant_plot(df)
+        trace, trace2, layout = get_plant_plot(df)
         
     else:
         # Consulta a postgreSQL que devuelve las 100 primeras filas con un offset que incrementa cada GRAPH_INTERVALS ms
         df = pd.read_sql(('SELECT * FROM signals LIMIT 100 OFFSET %s' % (interval)), server_conn)
-        trace, layout = get_plant_plot(df)
+        trace, trace2, layout = get_plant_plot(df)
 
-    return [dict(data=[trace], layout=layout)]
+    return [dict(data=[trace2, trace], layout=layout)]
 
 # Callback que pausa la actualización automática del gráfico
 @app.callback(
@@ -1477,15 +1493,15 @@ def enable_update(n, tab, disabled, store, n_clicks):
 @app.callback([Output('store-p2-layout', 'data'), Output('url', 'pathname'), Output('store-id-clicked', 'data')],
               [Input('plant-plot', 'clickData')])
 def change_page(click_data):
-    des_s1 =  dbc.ListGroupItem("No hay ningúna señal desviada", id="desviacion-s1-item", className='text-center')
-    des_s2 =  dbc.ListGroupItem("No hay ningúna señal desviada", id="desviacion-s2-item", className='text-center')
-    fal_s1 =  dbc.ListGroupItem("No hay ningúna señal con fallos de registro/sensor", id="fallos-s1-item", className='text-center')
-    fal_s2 =  dbc.ListGroupItem("No hay ningúna señal con fallos de registro/sensor", id="fallos-s2-item", className='text-center')
-    point_id = -1
     if click_data is not None:
+        des_s1 =  dbc.ListGroupItem("No hay ningúna señal desviada", id="desviacion-s1-item", className='text-center')
+        des_s2 =  dbc.ListGroupItem("No hay ningúna señal desviada", id="desviacion-s2-item", className='text-center')
+        fal_s1 =  dbc.ListGroupItem("No hay ningúna señal con fallos de registro/sensor", id="fallos-s1-item", className='text-center')
+        fal_s2 =  dbc.ListGroupItem("No hay ningúna señal con fallos de registro/sensor", id="fallos-s2-item", className='text-center')
+        point_id = -1
         if 'points' in click_data.keys():
-            if 'id' in click_data['points'][0].keys():
-                point_id = click_data['points'][0]['id']
+            if 'id' in click_data['points'][1].keys():
+                point_id = click_data['points'][1]['id']
                 selected_data = pd.read_sql(('SELECT * FROM signals WHERE id=%s' % (point_id)), server_conn)
                 [col_fal_s1, col_des_s1] = get_columns(selected_data, 's1')
                 [col_fal_s2, col_des_s2] = get_columns(selected_data, 's2')
@@ -1493,7 +1509,7 @@ def change_page(click_data):
                 fal_s1 = get_cards_layout(col_fal_s1, False, selected_data)
                 des_s2 = get_cards_layout(col_des_s2, True, selected_data)
                 fal_s2 = get_cards_layout(col_fal_s2, False, selected_data)
-    return [{'des_s1': (des_s1), 'fal_s1': (fal_s1), 'des_s2': (des_s2), 'fal_s2': (fal_s2)}, '/seccions', {'id': point_id}]
+        return [{'des_s1': (des_s1), 'fal_s1': (fal_s1), 'des_s2': (des_s2), 'fal_s2': (fal_s2)}, '/seccions', {'id': point_id}]
 
 @app.callback(
     [Output("calendar-heatmap", "figure"), Output("chm_info_card1", "children"),
@@ -1565,7 +1581,8 @@ def update_date_min(hour_up_min, min_up_min, hour_down_min, min_down_min,
     [Input('calendar-heatmap', 'clickData')],
 )
 def change_tab(clicked):
-    return 'hist'
+    if clicked is not None:
+        return 'hist'
 
 #%%###########################################################################
 #                           05_1. SECCIONS-PAGE                              #
@@ -1584,7 +1601,7 @@ seccions_page_layout = html.Div([
         dbc.Tab(label='Horno', tab_id='s1'),
         # Tab S2
         dbc.Tab(label='Caseta', tab_id='s2'),
-    ], id='seccion-tabs'),
+    ], id='seccion-tabs', active_tab='s1'),
     html.Div([
         html.Div([
             # Listas de desviacion y fallos de resgistros/sensores
@@ -1616,6 +1633,8 @@ seccions_page_layout = html.Div([
                     dbc.CardBody([
                         html.Img(src=app.get_asset_url(f"plant-s1.jpg"), id='seccion-img',\
                                  className='mx-auto d-block h-100 w-100'),
+                        html.Div(className='red-dot'),
+                        html.Div(className='green-dot'),
                     ], className='h-100')
                 ], className='h-100')
             ], className='h-100 col-5 px-1')
@@ -1777,7 +1796,7 @@ reports_page_layout = html.Div([
     dbc.Tabs([
         dbc.Tab(label='Tiempo Real', tab_id='real'),
         dbc.Tab(label='Historico', tab_id='hist'),
-    ], className='invisible', id='home-page-tabs'), 
+    ], className='invisible', id='home-page-tabs', active_tab='real'), 
 ], className='h-100') 
 
 #%%###########################################################################

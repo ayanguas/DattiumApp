@@ -15,7 +15,7 @@ import numpy as np
 local = False
 
 if not local:
-    ip = 'dattiumappdb.cxlqgh9vjio0.us-east-2.rds.amazonaws.com'
+    ip = 'dattiumapp.c1hwki2zbgvt.eu-west-3.rds.amazonaws.com'
     user = 'postgres'
     pswrd = 'D4ttium1'
 else:
