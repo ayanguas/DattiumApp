@@ -71,3 +71,19 @@
   left: 70%;
   position: absolute;
 }
+
+.warning-icon {
+  font-size: calc(0.75vw + 0.75vh);
+  top: 45%;
+  left: 68%;
+  position: absolute;
+  color: #EC5550;
+}
+
+.check-icon {
+  font-size: calc(0.75vw + 0.75vh);
+  top: 45%;
+  left: 17%;
+  position: absolute;
+  color: #59C159;
+}

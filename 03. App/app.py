@@ -1633,8 +1633,10 @@ seccions_page_layout = html.Div([
                     dbc.CardBody([
                         html.Img(src=app.get_asset_url(f"plant-s1.jpg"), id='seccion-img',\
                                  className='mx-auto d-block h-100 w-100'),
-                        html.Div(className='red-dot'),
-                        html.Div(className='green-dot'),
+                        html.I(className="fas fa-exclamation-triangle warning-icon"),
+                        html.I(className="fas fa-check-circle check-icon"),
+                        # html.Div(className='red-dot'),
+                        # html.Div(className='green-dot'),
                     ], className='h-100')
                 ], className='h-100')
             ], className='h-100 col-5 px-1')
