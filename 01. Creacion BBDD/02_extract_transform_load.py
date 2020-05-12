@@ -12,12 +12,16 @@ import numpy as np
 
 # Cambiar a False para conectarse a un servidor remoto y modificar 
 # la ip con la dirección del servidor
-local = True
+local = False
 
 if not local:
-    ip = '192.168.1.33'
+    ip = 'dattiumapp.c1hwki2zbgvt.eu-west-3.rds.amazonaws.com'
+    user = 'postgres'
+    pswrd = 'D4ttium1'
 else:
     ip = '127.0.0.1'
+    user = 'test'
+    pswrd = 'test123'
 
 ##############################################################################
 #                              01_EXTRACT                                    #
@@ -46,6 +50,6 @@ df['quality'] = np.random.choice(3, len(df), p=[0.3333, 0.3333, 0.3334])
 #                               03_LOAD                                      #
 ##############################################################################
 # Conexion creation to server (192.168.1.33) database, DattiumApp; user=test; pswd=test123
-server_conn = create_engine('postgresql://test:test123@{}:5432/DattiumApp'.format(ip))
+server_conn = create_engine('postgresql://{}:{}@{}:5432/DattiumApp'.format(user, pswrd, ip))
 # Load transformed DataFrame to server
 df.to_sql(name='signals', con=server_conn, if_exists='replace')
