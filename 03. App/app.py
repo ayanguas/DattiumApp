@@ -493,7 +493,7 @@ def get_plant_plot(df):
     datemin1 = df['date'].min() - timedelta(hours=2)
     datemax1 = df['date'].max() + timedelta(hours=2)
     
-    moving_average = df[column].rolling(5).mean()
+    moving_average = df[column].rolling(3).mean()
     
     # Scatter plot con del label de comportamiento de la planta
     trace = dict(
@@ -1631,10 +1631,12 @@ seccions_page_layout = html.Div([
                 dbc.Card([
                     dbc.CardHeader([html.H5('Diagram', className='py-0 text-style')], className='px-2 pt-1 p-0'),
                     dbc.CardBody([
-                        html.Img(src=app.get_asset_url(f"plant-s1.jpg"), id='seccion-img',\
+                        html.Img(src=app.get_asset_url(f"plant-s1.png"), id='seccion-img',\
                                  className='mx-auto d-block h-100 w-100'),
-                        html.I(className="fas fa-exclamation-triangle warning-icon"),
-                        html.I(className="fas fa-check-circle check-icon"),
+                        html.I(className="fas fa-exclamation-triangle warning-icon", style={"top": "35%", "left": "76%"}),
+                        html.I(className="fas fa-exclamation-triangle warning-yellow-icon", style={"top": "56%", "left": "80.5%"}),
+                        html.I(className="fas fa-exclamation-triangle warning-icon", style={"top": "49%", "left": "63.5%"}),
+                        # html.I(className="fas fa-check-circle check-icon", style={"top": "12%", "left": "40%"}),
                         # html.Div(className='red-dot'),
                         # html.Div(className='green-dot'),
                     ], className='h-100')
@@ -1677,7 +1679,7 @@ def render_seccion_tab_content(active_tab):
     if active_tab == 's1':
         columns = [{'label': x, 'value': x} for x in columns_s1]
         default = 'Amina Flow'
-        img = 'plant-s1.jpg'
+        img = 'plant-s1.png'
     else:
         columns = [{'label': x, 'value': x} for x in columns_s2]
         default = 'Flotation Column 02 Level' 
