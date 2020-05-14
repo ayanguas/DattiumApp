@@ -789,6 +789,8 @@ def get_signal_info(id_data, column):
 
 # Función que devuelve el trace y layout del gráfico de la señal
 def get_signal_plot(df, column, id_data):
+    domain = 0.7
+    df_hist = pd.DataFrame(df_raw).drop(df.index)
     mean = df[column].mean()
     std = 2*df[column].std()
     # Signal Plot S1
@@ -811,12 +813,53 @@ def get_signal_plot(df, column, id_data):
         name='Seleccionado',
     )
     
+    trace3 = dict(
+        type="histogram",
+        name='Último año',
+        y=df_hist[column],
+        nbinsy=50,
+        bingroup=1,
+        histnorm='percent',
+        label='historical',
+        xaxis='x2',
+        yaxis='y',
+        marker={
+            'line':{
+                'width': 1,
+                'color': colors['histogram-hist-br'],
+            },
+            'color': colors['histogram-hist'],
+        },
+    )
+    
+    # Datos seleccionados con la id para el histograma S1
+    trace4 = dict(
+        type="histogram",
+        name='Último mes',
+        y=df[column],
+        bingroup=1,
+        nbinsy=50,
+        histnorm='percent',
+        opacity=0.75,
+        label='current',
+        xaxis='x2',
+        yaxis='y',
+        marker={
+            'line':{
+                'width': 1,
+                'color': colors['histogram-act-br'],
+            },
+            'color': colors['histogram-act'],
+        },
+    )
+    
     # Signal Layout S1
     layout = dict(
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         font={"color": colors['text'], "size": size_font, "family": family_font,},
         margin={'t':25, 'b': 45, 'l': 30, 'r': 15},
+        barmode='overlay',
         legend={
             "orientation": "h",
             "xanchor":"center",
@@ -829,12 +872,13 @@ def get_signal_plot(df, column, id_data):
             "zeroline": False,
             "fixedrange": False,
             "ylabel": column,
+            "domain": [0, domain],
         },
         yaxis={
-            "range": [
-                df[column].min() - 0.1*(df[column].max() - df[column].min()), 
-                df[column].max() + 0.1*(df[column].max() - df[column].min()),
-            ],
+            # "range": [
+            #     df[column].min() - 0.1*(df[column].max() - df[column].min()), 
+            #     df[column].max() + 0.1*(df[column].max() - df[column].min()),
+            # ],
             "showgrid": True,
             "showline": True,
             "zeroline": False,
@@ -872,9 +916,33 @@ def get_signal_plot(df, column, id_data):
             
                 ),
             },
+            {
+                'type':"line",
+                # 'xref':df[df['id']==id_data['id']][column].iloc[0],
+                'xref':'paper',
+                'x0':domain + 0.01,
+                'y0':df[df['id']==id_data][column].iloc[0],
+                'x1':1,
+                'y1':df[df['id']==id_data][column].iloc[0],
+                'line':dict(
+                    color=colors['plantplot-l-red'],
+                    width=4,
+            
+                ),
+            },
         ],
+        yaxis2={
+            "gridcolor": colors["grid"],
+            # "anchor": "free",
+            # "overlaying": "y",
+            # "side": "right",
+            # "showticklabels": False,
+        },
+        xaxis2={
+            "domain": [domain + 0.01, 1],
+        },
     )
-    return trace, trace2, layout
+    return trace, trace2, trace3, trace4, layout
 
 # Función que devuelve los traces y layout del histograma
 def get_histogram(df, column, id_data):
@@ -1655,12 +1723,12 @@ seccions_page_layout = html.Div([
             # Plot señal S1
             html.Div(
                 line_plot_layout('s1')               
-            ,className='signal-plot col-5 h-100 px-1'),
+            ,className='signal-plot col-10 h-100 px-1'),
             
-            # Plot histograma S1
-            html.Div(
-                histo_layout('s1')
-            ,className='histogram-plot col-5 h-100 px-1'),
+            # # Plot histograma S1
+            # html.Div(
+            #     histo_layout('s1')
+            # ,className='histogram-plot col-5 h-100 px-1'),
         ], id='graficos', className='row w-100 h-50 py-1')
     ], id='seccion-content', className='py-1 pl-4', style=dict(height='calc(100% - 40px)'))
 ], className = 'h-100 w-100')
@@ -1755,10 +1823,10 @@ def gen_signal_s1(column, active_tab, id_data):
             # Query que devuelve a partir de una id las 1000 muestras anteriores
             df = pd.read_sql(('SELECT * FROM signals WHERE id>{} AND id<={}'.format(id_data['id']-500, id_data['id']+500)), server_conn)
     
-    trace, trace2, layout = get_signal_plot(df, column, id_data['id'])
+    trace, trace2, trace3, trace4, layout = get_signal_plot(df, column, id_data['id'])
     
-    trace3, trace4, layout2 = get_histogram(df, column, id_data['id'])
-    return [dict(data=[trace, trace2], layout=layout), dict(data=[trace3, trace4], layout=layout2)]
+    trace5, trace6, layout2 = get_histogram(df, column, id_data['id'])
+    return [dict(data=[trace, trace2, trace3, trace4], layout=layout), dict(data=[trace5, trace6], layout=layout2)]
 
 
 #%%###########################################################################
