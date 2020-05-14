@@ -3,7 +3,7 @@
 """
 Created on Fri Mar  6 11:40:57 2020
 
-@author: albertoyanguasrovira - test1
+@author: albertoyanguasrovira
 """
 
 import os
