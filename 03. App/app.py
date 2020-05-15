@@ -440,13 +440,342 @@ filters = html.Div([
     ], className='row w-100 px-5 pb-1 h-100'), 
 ], className='h-100')
 
+# Devuelve una tabla en HTML a partir de un DF
+def make_table(df):
+    """ Return a dash definition of an HTML table for a Pandas dataframe """
+    table = []
+    for index, row in df.iterrows():
+        html_row = []
+        for i in range(len(row)):
+            html_row.append(html.Td([row[i]]))
+        if index%2 == 0:
+            table.append(html.Tr(html_row))
+        else:
+            table.append(html.Tr(html_row, className='secondary'))
+    return table
+
+# Devuelve la tabla resumen por producto
+def product_summary_table(df):
+    max_p = df.groupby('product').count()['id'].idxmax() # Producto más fabricado
+    max_q = df.groupby('quality').count()['id'].idxmax() # Calidad más fabricada
+    max_pq = df.groupby(['product', 'quality']).count()['id'].idxmax() # Producto-Calidad más fabricado
+    fail_p = df[df['label']<4].groupby('product').count()['id'].idxmax() # Producto con más fallos
+    fail_q = df[df['label']<4].groupby('quality').count()['id'].idxmax() # Calidad con más fallos
+    fail_pq = df[df['label']<4].groupby(['product', 'quality']).count()['id'].idxmax() # Producto con más fallos
+    df_table = pd.DataFrame(data=[['Producto + fabricado', 'Perfil ' + perfiles[max_p]],
+                                  ['Calidad + fabricada', 'Calidad ' + str(max_q)],
+                                  ['Producto/Calidad + fabricada', 'Perfil ' +
+                                   perfiles[max_pq[0]] + ' / Calidad ' + str(max_pq[1])],
+                                  ['Producto con + fallos', 'Perfil ' + perfiles[fail_p]],
+                                  ['Calidad con + fallos', 'Calidad ' + str(fail_q)],
+                                  ['Producto/Calidad con + fallos', 'Perfil ' + 
+                                   perfiles[fail_pq[0]]+' / Calidad ' + str(fail_pq[1])]])
+    product_table = make_table(df_table)
+    return product_table
+
+# Devuelve la tabla resumen por producto
+def seccion_summary_table(df):
+    seccions = ['S1', 'S2', 'S3']
+    fail_s = 'S-'
+    aux_fail_s = -1
+    for seccion in seccions:
+        if aux_fail_s < len(df[df[f'label_{seccion}']<1]):
+            fail_s = seccion
+    df_table = pd.DataFrame(data=[['Seccion con + fallos', fail_s]])
+    seccion_table = make_table(df_table)
+    return seccion_table
+
+
+# Devuelve el gráfico de barras de barras buenas/malas en funcion de una o varias columnas
+def bar_graph_product_summary(df):
+    todas = df.groupby('product').count()['id']
+    buenas = df[df['label']>=4].groupby('product').count()['id']
+    malas = df[df['label']<4].groupby('product').count()['id']
+    trace = dict(
+        type='bar',
+        name='Buenas',
+        x = ['Product ' + str(idx) for idx in todas.index],
+        y = ((buenas/todas)*100).values,
+        marker = dict(
+            color = colors['plantplot-mk-green'], 
+        ),
+    )
+    trace2 = dict(
+        type='bar',
+        name='Malas',
+        x = ['Product ' + str(idx) for idx in todas.index],
+        y = ((malas/todas)*100).values,
+        marker = dict(
+            color = colors['plantplot-mk-red'], 
+        ),
+    )
+    layout = dict(
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        margin={"t":30, "r":15, "l": 35},
+        xaxis={
+            "tickangle": 30,
+        },
+    )
+    
+    return [trace, trace2], layout
+
+def liner_graph_product_summary(df, product, quality, xaxis):
+    if product == -1:
+        fproduct = df['product'].isin(df['product'].unique())
+    else:
+        fproduct = df['product'] == product
+    if quality == -1:
+        fquality = df['quality'].isin(df['quality'].unique())
+    else:
+        fquality = df['quality'] == quality
+        
+    if xaxis == 'month':
+        df['date_groupby'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
+    else:
+        df['date_groupby'] = df['date'].apply(lambda x: x.date())
+        
+    todas = df[(fproduct) & (fquality)].groupby('date_groupby').count()['id']
+    buenas = df[(df['label']>=4) & (fproduct) & (fquality)].groupby('date_groupby').count()['id']  
+    trace = dict(
+        type='line',
+        x = todas.index,
+        y = ((buenas/todas)*100).values,
+    )
+    layout = dict(
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        margin={"t":30, "r":15, "l": 35},
+        xaxis={
+            "tickangle": 30,
+        },
+        yaxis={
+            "range": [50,100]    
+        },
+    )
+    return trace, layout
+
+# Devuelve el gráfico de barras de barras buenas/malas por seccion
+def bar_graph_seccions_summary(df):
+    secciones = [1 ,2, 3]
+    name_secciones = ['Horno', 'Casetas', 'Tren']
+    todas = []
+    buenas = []
+    malas = []
+    desviadas = []
+    for seccion in secciones:
+        todas = np.append(todas, len(df))
+        buenas = np.append(buenas, len(df[df[f'label_S{seccion}']==2]))
+        desviadas = np.append(desviadas, len(df[df[f'label_S{seccion}']==1]))
+        malas = np.append(malas, len(df[df[f'label_S{seccion}']==0]))
+
+    trace = dict(
+        type='bar',
+        name='Buenas',
+        x = [f'{seccion}' for seccion in name_secciones],
+        y = ((buenas/todas)*100),
+        marker = dict(
+            color = colors['plantplot-mk-green'], 
+        ),
+    )
+    trace2 = dict(
+        type='bar',
+        name='Anomalías',
+        x = [f'{seccion}' for seccion in name_secciones],
+        y = ((malas/todas)*100),
+        marker = dict(
+            color = colors['plantplot-mk-red'], 
+        ),
+    )
+    trace3 = dict(
+        type='bar',
+        name='Desviaciones',
+        x = [f'{seccion}' for seccion in name_secciones],
+        y = ((desviadas/todas)*100),
+        marker = dict(
+            color = colors['stacked-bar-yellow'], 
+        ),
+    )
+    layout = dict(
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        margin={"t":30, "r":15, "l": 35},
+        xaxis={
+            "tickangle": 30,
+        },
+        barmode='stack',
+    )
+    
+    return [trace, trace3, trace2], layout
+
+def liner_graph_seccions_summary(df, seccion, xaxis):
+    if xaxis == 'month':
+        df['date_groupby'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
+    else:
+        df['date_groupby'] = df['date'].apply(lambda x: x.date())
+        
+    todas = df.groupby('date_groupby').count()['id']
+    buenas = df[(df[f'label_S{seccion}']>0)].groupby('date_groupby').count()['id']
+    
+    trace = dict(
+        type='line',
+        x = todas.index,
+        y = ((buenas/todas)*100).values,
+    )
+    layout = dict(
+        plot_bgcolor=colors["graph-bg"],
+        paper_bgcolor=colors["graph-bg"],
+        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        margin={"t":30, "r":15, "l": 35},
+        xaxis={
+            "tickangle": 30,
+        },
+        yaxis={
+            "range": [50,100]    
+        },
+    )
+    return trace, layout
+
+# Devuelve el layout de los tabs de reports
+def summary_tab_layout(tab, df, single):
+    
+    product_options = [{"label": f"Perfil {perfiles[product]}", "value": product}
+                             for product in np.sort(df['product'].unique())]
+    product_options.append({"label": "Todos", "value": -1})
+    
+    quality_options = [{"label": f"Calidad {quality}", "value": quality} 
+                       for quality in np.sort(df['quality'].unique())]
+    quality_options.append({"label": "Todos", "value": -1})
+    
+    if single:
+        hcontainer = '100%'
+    else:
+        hcontainer = '50%'
+        
+    if tab == 'products':
+        table = product_summary_table(df)
+        data_bar, layout_bar = bar_graph_product_summary(df)
+        titulo_bar_plot = 'Evaluación Anomalias por producto'
+        titulo_line_plot = 'Estabilidad temporal del proceso por producto'
+        data_line, layout_line = liner_graph_product_summary(df, df['product'].unique()[0],\
+                                                df['quality'].unique()[0], 'day')    
+        pq_selector = [
+            dbc.FormGroup([
+                dcc.Dropdown(
+                    options=product_options,                
+                    value=-1,#df['product'].unique()[0],
+                    id="checklist-product",
+                    style={'color': colors['text-dropdown'],},
+                ),
+            ]),
+            dbc.FormGroup([
+                dcc.Dropdown(
+                    options= quality_options,       
+                    value=-1,
+                    id="checklist-quality",
+                    style={'color': colors['text-dropdown'],},
+                ),
+            ]),
+            dbc.FormGroup([
+                dbc.RadioItems(
+                    options=[{"label": "Day", "value": "day"},
+                        {"label": "Month", "value": "month"},],                
+                    value="day",
+                    id=f"checklist-xaxis-product",
+                ),
+            ]),
+        ]
+    else:
+        table = seccion_summary_table(df)
+        data_bar, layout_bar = bar_graph_seccions_summary(df)
+        titulo_bar_plot = 'Evaluación Anomalias por seccion'
+        titulo_line_plot = 'Estabilidad temporal del proceso por seccion'
+        data_line, layout_line = liner_graph_seccions_summary(df, '1', 'day')
+        pq_selector = [
+            dbc.FormGroup([
+                # dbc.Label("Selector de seccion"),
+                dcc.Dropdown(
+                    options=[{"label": f"Seccion {seccion}", "value": seccion}\
+                             for seccion in [1,2,3]],                
+                    value=1,
+                    id="checklist-seccion",
+                    style={'color': colors['text-dropdown'],},
+                ),
+            ]),
+            dbc.FormGroup([
+                dbc.RadioItems(
+                    options=[{"label": "Day", "value": "day"},
+                        {"label": "Month", "value": "month"},],                
+                    value="day",
+                    id=f"checklist-xaxis-seccion",
+                ),
+            ]),
+        ]         
+    return html.Div([
+        html.Div([
+            html.Div([
+                dbc.Card([
+                    dbc.CardHeader([html.H5('Resumen de {}'.format(tab), className='text-style')], className='px-2 pt-1 p-0'),
+                    dbc.CardBody([
+                        dbc.Table(table, 
+                                  striped=True, 
+                                    # bordered=True, 
+                                  responsive=True,
+                                  hover=True,
+                                  dark=True,
+                                  className='table text-style-table m-0',
+                                  style={"height": '100%'},
+                                  id=f'summary-table-{tab}')
+                    ], className='h-100 px-1 py-0'),
+                ], className='h-100'),
+            ], className='col-3 px-2 h-100'),
+            html.Div([
+                dbc.Card([
+                    dbc.CardHeader([html.H5(titulo_bar_plot, className='text-style')], className='px-2 pt-1 p-0'),
+                    dbc.CardBody([
+                        dcc.Graph(
+                            id=f'bar-plot-{tab}',
+                            figure=dict(
+                                data = data_bar,
+                                layout=layout_bar,
+                            ),
+                            style={"height": '100%'},
+                        ),
+                    ], className='py-1 px-2'),
+                ], className='h-100 w-100'),
+            ], className='col-4 px-1 h-100'),
+            html.Div([
+                dbc.Card([
+                    dbc.CardHeader([html.H5(titulo_line_plot, className='text-style')], className='px-2 pt-1 p-0'),
+                    dbc.CardBody([
+                        html.Div([
+                            dcc.Graph(
+                                id=f'time-plot-{tab}',
+                                figure=dict(
+                                    data = [data_line],
+                                    layout = layout_line,
+                                ),
+                                style={"height": '100%'},
+                                className='col-9'
+                            ),
+                            html.Div(pq_selector,className='col-3 pt-4 h-100'),
+                        ], className='row h-100 w-100')
+                    ], className='h-100 py-1 px-1')
+                ], className='h-100')
+            ], className='col-5 pl-1 pr-1 h-100'),
+            
+        ], className='row py-1 px-2 m-0 w-100', style={"height": '100%'})], className='pt-1', style={"height": hcontainer})
+
 # Report Page Layout
 reports_page_layout2 = html.Div([
     dbc.Tabs([
         dbc.Tab(label='Resumen por producto', tab_id='products'), 
         dbc.Tab(label='Resumen por seccion', tab_id='seccions'),
     ], id='summary-tabs', active_tab='products', className='Tabs1'),
-    html.Div([], id='summary-tab-content', style=dict(height='calc(100% - 40px)'))
+    html.Div([summary_tab_layout('products', df_raw, True)], id='summary-tab-content', style=dict(height='calc(100% - 40px)'))
 ], className='h-100') 
 
 home_layout = html.Div([
@@ -988,332 +1317,7 @@ def get_histogram(df, column, id_data):
 #                      02_03. FUNCIONES (SUMMARY PAGE)                       #
 ##############################################################################
 
-# Devuelve una tabla en HTML a partir de un DF
-def make_table(df):
-    """ Return a dash definition of an HTML table for a Pandas dataframe """
-    table = []
-    for index, row in df.iterrows():
-        html_row = []
-        for i in range(len(row)):
-            html_row.append(html.Td([row[i]]))
-        if index%2 == 0:
-            table.append(html.Tr(html_row))
-        else:
-            table.append(html.Tr(html_row, className='secondary'))
-    return table
 
-# Devuelve la tabla resumen por producto
-def product_summary_table(df):
-    max_p = df.groupby('product').count()['id'].idxmax() # Producto más fabricado
-    max_q = df.groupby('quality').count()['id'].idxmax() # Calidad más fabricada
-    max_pq = df.groupby(['product', 'quality']).count()['id'].idxmax() # Producto-Calidad más fabricado
-    fail_p = df[df['label']<4].groupby('product').count()['id'].idxmax() # Producto con más fallos
-    fail_q = df[df['label']<4].groupby('quality').count()['id'].idxmax() # Calidad con más fallos
-    fail_pq = df[df['label']<4].groupby(['product', 'quality']).count()['id'].idxmax() # Producto con más fallos
-    df_table = pd.DataFrame(data=[['Producto + fabricado', 'Perfil ' + perfiles[max_p]],
-                                  ['Calidad + fabricada', 'Calidad ' + str(max_q)],
-                                  ['Producto/Calidad + fabricada', 'Perfil ' +
-                                   perfiles[max_pq[0]] + ' / Calidad ' + str(max_pq[1])],
-                                  ['Producto con + fallos', 'Perfil ' + perfiles[fail_p]],
-                                  ['Calidad con + fallos', 'Calidad ' + str(fail_q)],
-                                  ['Producto/Calidad con + fallos', 'Perfil ' + 
-                                   perfiles[fail_pq[0]]+' / Calidad ' + str(fail_pq[1])]])
-    product_table = make_table(df_table)
-    return product_table
-
-# Devuelve la tabla resumen por producto
-def seccion_summary_table(df):
-    seccions = ['S1', 'S2', 'S3']
-    fail_s = 'S-'
-    aux_fail_s = -1
-    for seccion in seccions:
-        if aux_fail_s < len(df[df[f'label_{seccion}']<1]):
-            fail_s = seccion
-    df_table = pd.DataFrame(data=[['Seccion con + fallos', fail_s]])
-    seccion_table = make_table(df_table)
-    return seccion_table
-# Devuelve el layout de los tabs de reports
-def summary_tab_layout(tab, df, single):
-    
-    product_options = [{"label": f"Perfil {perfiles[product]}", "value": product}
-                             for product in np.sort(df['product'].unique())]
-    product_options.append({"label": "Todos", "value": -1})
-    
-    quality_options = [{"label": f"Calidad {quality}", "value": quality} 
-                       for quality in np.sort(df['quality'].unique())]
-    quality_options.append({"label": "Todos", "value": -1})
-    
-    if single:
-        hcontainer = '100%'
-    else:
-        hcontainer = '50%'
-        
-    if tab == 'products':
-        table = product_summary_table(df)
-        data_bar, layout_bar = bar_graph_product_summary(df)
-        titulo_bar_plot = 'Evaluación Anomalias por producto'
-        titulo_line_plot = 'Estabilidad temporal del proceso por producto'
-        data_line, layout_line = liner_graph_product_summary(df, df['product'].unique()[0],\
-                                                df['quality'].unique()[0], 'day')    
-        pq_selector = [
-            dbc.FormGroup([
-                dcc.Dropdown(
-                    options=product_options,                
-                    value=-1,#df['product'].unique()[0],
-                    id="checklist-product",
-                    style={'color': colors['text-dropdown'],},
-                ),
-            ]),
-            dbc.FormGroup([
-                dcc.Dropdown(
-                    options= quality_options,       
-                    value=-1,
-                    id="checklist-quality",
-                    style={'color': colors['text-dropdown'],},
-                ),
-            ]),
-            dbc.FormGroup([
-                dbc.RadioItems(
-                    options=[{"label": "Day", "value": "day"},
-                        {"label": "Month", "value": "month"},],                
-                    value="day",
-                    id=f"checklist-xaxis-product",
-                ),
-            ]),
-        ]
-    else:
-        table = seccion_summary_table(df)
-        data_bar, layout_bar = bar_graph_seccions_summary(df)
-        titulo_bar_plot = 'Evaluación Anomalias por seccion'
-        titulo_line_plot = 'Estabilidad temporal del proceso por seccion'
-        data_line, layout_line = liner_graph_seccions_summary(df, '1', 'day')
-        pq_selector = [
-            dbc.FormGroup([
-                # dbc.Label("Selector de seccion"),
-                dcc.Dropdown(
-                    options=[{"label": f"Seccion {seccion}", "value": seccion}\
-                             for seccion in [1,2,3]],                
-                    value=1,
-                    id="checklist-seccion",
-                    style={'color': colors['text-dropdown'],},
-                ),
-            ]),
-            dbc.FormGroup([
-                dbc.RadioItems(
-                    options=[{"label": "Day", "value": "day"},
-                        {"label": "Month", "value": "month"},],                
-                    value="day",
-                    id=f"checklist-xaxis-seccion",
-                ),
-            ]),
-        ]         
-    return html.Div([
-        html.Div([
-            html.Div([
-                dbc.Card([
-                    dbc.CardHeader([html.H5('Resumen de {}'.format(tab), className='text-style')], className='px-2 pt-1 p-0'),
-                    dbc.CardBody([
-                        dbc.Table(table, 
-                                  striped=True, 
-                                    # bordered=True, 
-                                  responsive=True,
-                                  hover=True,
-                                  dark=True,
-                                  className='table text-style-table m-0',
-                                  style={"height": '100%'},
-                                  id=f'summary-table-{tab}')
-                    ], className='h-100 px-1 py-0'),
-                ], className='h-100'),
-            ], className='col-3 px-2 h-100'),
-            html.Div([
-                dbc.Card([
-                    dbc.CardHeader([html.H5(titulo_bar_plot, className='text-style')], className='px-2 pt-1 p-0'),
-                    dbc.CardBody([
-                        dcc.Graph(
-                            id=f'bar-plot-{tab}',
-                            figure=dict(
-                                data = data_bar,
-                                layout=layout_bar,
-                            ),
-                            style={"height": '100%'},
-                        ),
-                    ], className='py-1 px-2'),
-                ], className='h-100 w-100'),
-            ], className='col-4 px-1 h-100'),
-            html.Div([
-                dbc.Card([
-                    dbc.CardHeader([html.H5(titulo_line_plot, className='text-style')], className='px-2 pt-1 p-0'),
-                    dbc.CardBody([
-                        html.Div([
-                            dcc.Graph(
-                                id=f'time-plot-{tab}',
-                                figure=dict(
-                                    data = [data_line],
-                                    layout = layout_line,
-                                ),
-                                style={"height": '100%'},
-                                className='col-9'
-                            ),
-                            html.Div(pq_selector,className='col-3 pt-4 h-100'),
-                        ], className='row h-100 w-100')
-                    ], className='h-100 py-1 px-1')
-                ], className='h-100')
-            ], className='col-5 pl-1 pr-1 h-100'),
-            
-        ], className='row py-1 px-2 m-0 w-100', style={"height": '100%'})], className='pt-1', style={"height": hcontainer})
-
-# Devuelve el gráfico de barras de barras buenas/malas en funcion de una o varias columnas
-def bar_graph_product_summary(df):
-    todas = df.groupby('product').count()['id']
-    buenas = df[df['label']>=4].groupby('product').count()['id']
-    malas = df[df['label']<4].groupby('product').count()['id']
-    trace = dict(
-        type='bar',
-        name='Buenas',
-        x = ['Product ' + str(idx) for idx in todas.index],
-        y = ((buenas/todas)*100).values,
-        marker = dict(
-            color = colors['plantplot-mk-green'], 
-        ),
-    )
-    trace2 = dict(
-        type='bar',
-        name='Malas',
-        x = ['Product ' + str(idx) for idx in todas.index],
-        y = ((malas/todas)*100).values,
-        marker = dict(
-            color = colors['plantplot-mk-red'], 
-        ),
-    )
-    layout = dict(
-        plot_bgcolor=colors["graph-bg"],
-        paper_bgcolor=colors["graph-bg"],
-        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
-        margin={"t":30, "r":15, "l": 35},
-        xaxis={
-            "tickangle": 30,
-        },
-    )
-    
-    return [trace, trace2], layout
-
-def liner_graph_product_summary(df, product, quality, xaxis):
-    if product == -1:
-        fproduct = df['product'].isin(df['product'].unique())
-    else:
-        fproduct = df['product'] == product
-    if quality == -1:
-        fquality = df['quality'].isin(df['quality'].unique())
-    else:
-        fquality = df['quality'] == quality
-        
-    if xaxis == 'month':
-        df['date_groupby'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
-    else:
-        df['date_groupby'] = df['date'].apply(lambda x: x.date())
-        
-    todas = df[(fproduct) & (fquality)].groupby('date_groupby').count()['id']
-    buenas = df[(df['label']>=4) & (fproduct) & (fquality)].groupby('date_groupby').count()['id']  
-    trace = dict(
-        type='line',
-        x = todas.index,
-        y = ((buenas/todas)*100).values,
-    )
-    layout = dict(
-        plot_bgcolor=colors["graph-bg"],
-        paper_bgcolor=colors["graph-bg"],
-        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
-        margin={"t":30, "r":15, "l": 35},
-        xaxis={
-            "tickangle": 30,
-        },
-        yaxis={
-            "range": [50,100]    
-        },
-    )
-    return trace, layout
-
-# Devuelve el gráfico de barras de barras buenas/malas por seccion
-def bar_graph_seccions_summary(df):
-    secciones = [1 ,2, 3]
-    name_secciones = ['Horno', 'Casetas', 'Tren']
-    todas = []
-    buenas = []
-    malas = []
-    desviadas = []
-    for seccion in secciones:
-        todas = np.append(todas, len(df))
-        buenas = np.append(buenas, len(df[df[f'label_S{seccion}']==2]))
-        desviadas = np.append(desviadas, len(df[df[f'label_S{seccion}']==1]))
-        malas = np.append(malas, len(df[df[f'label_S{seccion}']==0]))
-
-    trace = dict(
-        type='bar',
-        name='Buenas',
-        x = [f'{seccion}' for seccion in name_secciones],
-        y = ((buenas/todas)*100),
-        marker = dict(
-            color = colors['plantplot-mk-green'], 
-        ),
-    )
-    trace2 = dict(
-        type='bar',
-        name='Anomalías',
-        x = [f'{seccion}' for seccion in name_secciones],
-        y = ((malas/todas)*100),
-        marker = dict(
-            color = colors['plantplot-mk-red'], 
-        ),
-    )
-    trace3 = dict(
-        type='bar',
-        name='Desviaciones',
-        x = [f'{seccion}' for seccion in name_secciones],
-        y = ((desviadas/todas)*100),
-        marker = dict(
-            color = colors['stacked-bar-yellow'], 
-        ),
-    )
-    layout = dict(
-        plot_bgcolor=colors["graph-bg"],
-        paper_bgcolor=colors["graph-bg"],
-        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
-        margin={"t":30, "r":15, "l": 35},
-        xaxis={
-            "tickangle": 30,
-        },
-        barmode='stack',
-    )
-    
-    return [trace, trace3, trace2], layout
-
-def liner_graph_seccions_summary(df, seccion, xaxis):
-    if xaxis == 'month':
-        df['date_groupby'] = df['date'].apply(lambda x: datetime(x.year, x.month, calendar.monthrange(x.year, x.month)[1]))
-    else:
-        df['date_groupby'] = df['date'].apply(lambda x: x.date())
-        
-    todas = df.groupby('date_groupby').count()['id']
-    buenas = df[(df[f'label_S{seccion}']>0)].groupby('date_groupby').count()['id']
-    
-    trace = dict(
-        type='line',
-        x = todas.index,
-        y = ((buenas/todas)*100).values,
-    )
-    layout = dict(
-        plot_bgcolor=colors["graph-bg"],
-        paper_bgcolor=colors["graph-bg"],
-        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
-        margin={"t":30, "r":15, "l": 35},
-        xaxis={
-            "tickangle": 30,
-        },
-        yaxis={
-            "range": [50,100]    
-        },
-    )
-    return trace, layout
 
 #%%###########################################################################
 #                              03. LAYOUT                                    #
