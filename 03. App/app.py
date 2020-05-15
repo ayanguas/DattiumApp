@@ -500,14 +500,15 @@ def get_plant_plot(df):
         type="scatter",
         ids=df['id'],
         x=df['date'],
-        y=df[column],
-        line={"color": "dimgray"},
+        y=df['label_S1'],
+        line={"color": "#FF6B35"},
         hoverinfo='x+text',
         # Texto que se muestra al pasar el cursor por encima de un punto
-        hovertext = ['<b>Id</b>: {}<br><b>All</b>: {}<br><b>S1</b>: {}<br><b>S2</b>: {}<br><b>S3</b>: {}'.format(row['id'],row['label'], row['label_S1'], row['label_S2'], row['label_S3']) \
+        hovertext = ['<b>Id</b>: {}<br><b>All</b>: {}<br><b>S1</b>: {}'.format(row['id'],row['label'], row['label_S1']) \
                      for index, row in df.iterrows()],
-        mode="markers",
+        # mode="markers",
         name='Label',
+        stackgroup='one',
         marker=dict(
             color=[colors['plantplot-mk-green'] if x > 3 else colors['plantplot-mk-red'] for x in df['label']],
             # size=10,
@@ -515,6 +516,44 @@ def get_plant_plot(df):
     )
         
     trace2 = dict(
+        type="scatter",
+        ids=df['id'],
+        x=df['date'],
+        y=df['label_S2'],
+        line={"color": "#F7C59F"},
+        hoverinfo='x+text',
+        # Texto que se muestra al pasar el cursor por encima de un punto
+        hovertext = ['<b>Id</b>: {}<br><b>All</b>: {}<br><b>S2</b>: {}'.format(row['id'],row['label'], row['label_S2']) \
+                     for index, row in df.iterrows()],
+        # mode="markers",
+        name='Label',
+        stackgroup='one',
+        marker=dict(
+            color=[colors['plantplot-mk-green'] if x > 3 else colors['plantplot-mk-red'] for x in df['label']],
+            # size=10,
+        ),
+    )
+        
+    trace3 = dict(
+        type="scatter",
+        ids=df['id'],
+        x=df['date'],
+        y=df['label_S3'],
+        line={"color": "#EFEFD0"},
+        hoverinfo='x+text',
+        # Texto que se muestra al pasar el cursor por encima de un punto
+        hovertext = ['<b>Id</b>: {}<br><b>All</b>: {}<br><b>S3</b>: {}'.format(row['id'],row['label'], row['label_S3']) \
+                     for index, row in df.iterrows()],
+        mode="line+markers",
+        name='Label',
+        stackgroup='one',
+        marker=dict(
+            color=[colors['plantplot-mk-green'] if x > 3 else colors['plantplot-mk-red'] for x in df['label']],
+            # size=10,
+        ),
+    )
+        
+    trace4 = dict(
         type="scatter",
         x=df['date'],
         y=moving_average,
@@ -551,46 +590,46 @@ def get_plant_plot(df):
             "nticks": 7,
             "automargin": True,
         },
-        shapes=[
-            # Rectangulo de color verde para estilizar el scatter
-            dict(
-                type='rect', 
-                x0=datemin1, 
-                x1=datemax1, 
-                y0=4, 
-                y1=6.5, 
-                fillcolor=colors['plantplot-bg-green'], 
-                layer='below',
-                linewidth=0,
-            ),
-            # Rectangulo de color rojo para estilizar el scatter
-            dict(
-                type='rect', 
-                x0=datemin1, 
-                x1=datemax1, 
-                y0=0, 
-                y1=4, 
-                fillcolor=colors['plantplot-bg-red'], 
-                layer='below',
-                linewidth=0,
-            ),
-            # Linea de color rojo para estilizar el scatter
-            dict(
-                type="line",
-                x0=datemin1,
-                y0=4,
-                x1=datemax1,
-                y1=4,
-                line=dict(
-                    color=colors['plantplot-l-red'],
-                    width=4,
+        # shapes=[
+        #     # Rectangulo de color verde para estilizar el scatter
+        #     dict(
+        #         type='rect', 
+        #         x0=datemin1, 
+        #         x1=datemax1, 
+        #         y0=4, 
+        #         y1=6.5, 
+        #         fillcolor=colors['plantplot-bg-green'], 
+        #         layer='below',
+        #         linewidth=0,
+        #     ),
+        #     # Rectangulo de color rojo para estilizar el scatter
+        #     dict(
+        #         type='rect', 
+        #         x0=datemin1, 
+        #         x1=datemax1, 
+        #         y0=0, 
+        #         y1=4, 
+        #         fillcolor=colors['plantplot-bg-red'], 
+        #         layer='below',
+        #         linewidth=0,
+        #     ),
+        #     # Linea de color rojo para estilizar el scatter
+        #     dict(
+        #         type="line",
+        #         x0=datemin1,
+        #         y0=4,
+        #         x1=datemax1,
+        #         y1=4,
+        #         line=dict(
+        #             color=colors['plantplot-l-red'],
+        #             width=4,
             
-                ),
-                layer='below'
-            )
-        ],
+        #         ),
+        #         layer='below'
+        #     )
+        # ],
     )
-    return trace, trace2, layout
+    return trace, trace2, trace3, trace4, layout
 
 def return_weeknumber(fecha):
     return fecha.strftime("%Gww%V")
@@ -1506,14 +1545,14 @@ def gen_signal_hist(n_clicks, interval, tab, datemin, datemax, hourmin, hourmax,
         datemax = "'" + datemax + " " + str(hourmax).zfill(2) + ":"+ str(minmin).zfill(2) +"'"
         # Consulta a postgreSQL que devuelve
         df = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin, datemax)), server_conn)
-        trace, trace2, layout = get_plant_plot(df)
+        trace, trace2, trace3, trace4, layout = get_plant_plot(df)
         
     else:
         # Consulta a postgreSQL que devuelve las 100 primeras filas con un offset que incrementa cada GRAPH_INTERVALS ms
         df = pd.read_sql(('SELECT * FROM signals LIMIT 100 OFFSET %s' % (interval)), server_conn)
-        trace, trace2, layout = get_plant_plot(df)
+        trace, trace2, trace3, trace4, layout = get_plant_plot(df)
 
-    return [dict(data=[trace2, trace], layout=layout)]
+    return [dict(data=[trace4, trace, trace2, trace3,], layout=layout)]
 
 # Callback que pausa la actualización automática del gráfico
 @app.callback(
