@@ -6,3 +6,5 @@ data/MiningProcess_Flotation_Plant_Database.csv
 *.py
 01. Creacion BBDD/01_local_db_creation.py
 01. Creacion BBDD/02_extract_transform_load.py
+dattium-app/
+*.pyc
