@@ -146,7 +146,7 @@ calidad = {
 ##############################################################################
 
 date_min = datetime(2017, 4, 1, 1, 0, 0) #df_raw['date'].min()
-date_max = datetime(2017, 5, 10, 1, 0, 0) # df_raw['date'].max()
+date_max = datetime(2017, 4, 2, 1, 0, 0) # df_raw['date'].max()
 
 # Selector  de fechas
 selector_fecha = html.Div([
@@ -1305,12 +1305,6 @@ def get_histogram(df, column, id_data):
     return trace, trace2, layout
 
 #%%###########################################################################
-#                      02_03. FUNCIONES (SUMMARY PAGE)                       #
-##############################################################################
-
-
-
-#%%###########################################################################
 #                              03. LAYOUT                                    #
 ##############################################################################
 
@@ -1390,6 +1384,62 @@ home_page_layout = html.Div([
 #%%###########################################################################
 #                         04_2. HOME-PAGE CALLBACKS                          #
 ##############################################################################
+
+@app.callback(
+    [Output("date-min", "date"), Output("hour-min", "value"), Output("min-min", "value"),
+     Output("date-max", "date"), Output("hour-max", "value"), Output("min-max", "value")],
+    [Input("hour-min-up", "n_clicks_timestamp"),Input("min-min-up", "n_clicks_timestamp"),
+     Input("hour-min-down", "n_clicks_timestamp"), Input("min-min-down", "n_clicks_timestamp"),
+     Input("hour-max-up", "n_clicks_timestamp"),Input("min-max-up", "n_clicks_timestamp"),
+     Input("hour-max-down", "n_clicks_timestamp"), Input("min-max-down", "n_clicks_timestamp"),
+     Input('calendar-heatmap', 'clickData')],
+    [State("date-min", "date"), State("hour-min", "value"), State("min-min", "value"),
+     State("date-max", "date"), State("hour-max", "value"), State("min-max", "value"),]
+)
+def update_date_min(hour_up_min, min_up_min, hour_down_min, min_down_min,
+                    hour_up_max, min_up_max, hour_down_max, min_down_max,
+                    click_data, fecha_min, hour_min, minute_min,
+                    fecha_max, hour_max, minute_max):
+    
+    ctx = dash.callback_context
+    clicked = ctx.triggered[0]['prop_id'].split('.')[0]
+    if clicked == 'calendar-heatmap':
+        if click_data is not None:
+            if 'points' in click_data.keys():
+                if 'text' in click_data['points'][0].keys():
+                    fecha = click_data['points'][0]['text']
+                    date_out_min = datetime.strptime(fecha + " 00:00",'%Y-%m-%d %H:%M')
+                    date_out_max = datetime.strptime(fecha + " 23:59",'%Y-%m-%d %H:%M')
+    else:
+        values_min = {"hour-min-up":[1,0], 
+                      "min-min-up":[0,1], 
+                      "hour-min-down":[-1,0], 
+                      "min-min-down":[0,-1],
+                      "hour-max-up":[0,0], 
+                      "min-max-up":[0,0], 
+                      "hour-max-down":[0,0], 
+                      "min-max-down":[0,0],
+                      "calendar-heatmap":[0,0],
+                     }
+        values_max = {"hour-min-up":[0,0], 
+                      "min-min-up":[0,0], 
+                      "hour-min-down":[0,0], 
+                      "min-min-down":[0,0],
+                      "hour-max-up":[1,0], 
+                      "min-max-up":[0,1], 
+                      "hour-max-down":[-1,0], 
+                      "min-max-down":[0,-1],
+                      "calendar-heatmap":[0,0],
+                     }
+        date_out_min = datetime.strptime(fecha_min + " " + str(hour_min).zfill(2) + ":"+ str(minute_min).zfill(2),
+                                     '%Y-%m-%d %H:%M')
+        date_out_min = date_out_min + timedelta(hours=values_min[clicked][0], minutes=values_min[clicked][1])
+        
+        date_out_max = datetime.strptime(fecha_max + " " + str(hour_max).zfill(2) + ":"+ str(minute_max).zfill(2),
+                                     '%Y-%m-%d %H:%M')
+        date_out_max = date_out_max + timedelta(hours=values_max[clicked][0], minutes=values_max[clicked][1])
+    return [date_out_min.date(), str(date_out_min.hour).zfill(2), str(date_out_min.minute).zfill(2),
+            date_out_max.date(), str(date_out_max.hour).zfill(2), str(date_out_max.minute).zfill(2)]
 
 # Callback que modifica el contenido de la página en función del Tab activo.
 @app.callback(
@@ -1517,62 +1567,6 @@ def change_page(click_data):
 def render_chm_tab_content(active_tab):    
         return [calendar_heatmap(df_raw, active_tab), chm_card_content(1),
                 chm_card_content(2), chm_card_content(3)]
-
-@app.callback(
-    [Output("date-min", "date"), Output("hour-min", "value"), Output("min-min", "value"),
-     Output("date-max", "date"), Output("hour-max", "value"), Output("min-max", "value")],
-    [Input("hour-min-up", "n_clicks_timestamp"),Input("min-min-up", "n_clicks_timestamp"),
-     Input("hour-min-down", "n_clicks_timestamp"), Input("min-min-down", "n_clicks_timestamp"),
-     Input("hour-max-up", "n_clicks_timestamp"),Input("min-max-up", "n_clicks_timestamp"),
-     Input("hour-max-down", "n_clicks_timestamp"), Input("min-max-down", "n_clicks_timestamp"),
-     Input('calendar-heatmap', 'clickData')],
-    [State("date-min", "date"), State("hour-min", "value"), State("min-min", "value"),
-     State("date-max", "date"), State("hour-max", "value"), State("min-max", "value"),]
-)
-def update_date_min(hour_up_min, min_up_min, hour_down_min, min_down_min,
-                    hour_up_max, min_up_max, hour_down_max, min_down_max,
-                    click_data, fecha_min, hour_min, minute_min,
-                    fecha_max, hour_max, minute_max):
-    
-    ctx = dash.callback_context
-    clicked = ctx.triggered[0]['prop_id'].split('.')[0]
-    if clicked == 'calendar-heatmap':
-        if click_data is not None:
-            if 'points' in click_data.keys():
-                if 'text' in click_data['points'][0].keys():
-                    fecha = click_data['points'][0]['text']
-                    date_out_min = datetime.strptime(fecha + " 00:00",'%Y-%m-%d %H:%M')
-                    date_out_max = datetime.strptime(fecha + " 23:59",'%Y-%m-%d %H:%M')
-    else:
-        values_min = {"hour-min-up":[1,0], 
-                      "min-min-up":[0,1], 
-                      "hour-min-down":[-1,0], 
-                      "min-min-down":[0,-1],
-                      "hour-max-up":[0,0], 
-                      "min-max-up":[0,0], 
-                      "hour-max-down":[0,0], 
-                      "min-max-down":[0,0],
-                      "calendar-heatmap":[0,0],
-                     }
-        values_max = {"hour-min-up":[0,0], 
-                      "min-min-up":[0,0], 
-                      "hour-min-down":[0,0], 
-                      "min-min-down":[0,0],
-                      "hour-max-up":[1,0], 
-                      "min-max-up":[0,1], 
-                      "hour-max-down":[-1,0], 
-                      "min-max-down":[0,-1],
-                      "calendar-heatmap":[0,0],
-                     }
-        date_out_min = datetime.strptime(fecha_min + " " + str(hour_min).zfill(2) + ":"+ str(minute_min).zfill(2),
-                                     '%Y-%m-%d %H:%M')
-        date_out_min = date_out_min + timedelta(hours=values_min[clicked][0], minutes=values_min[clicked][1])
-        
-        date_out_max = datetime.strptime(fecha_max + " " + str(hour_max).zfill(2) + ":"+ str(minute_max).zfill(2),
-                                     '%Y-%m-%d %H:%M')
-        date_out_max = date_out_max + timedelta(hours=values_max[clicked][0], minutes=values_max[clicked][1])
-    return [date_out_min.date(), str(date_out_min.hour).zfill(2), str(date_out_min.minute).zfill(2),
-            date_out_max.date(), str(date_out_max.hour).zfill(2), str(date_out_max.minute).zfill(2)]
 
 @app.callback(
     Output("home-page-tabs", "active_tab"),
@@ -2080,7 +2074,7 @@ def histogram_traces(n_clicks1, n_clicks2, active_tab, datemin_1, datemax_1,
             columns[0], columns[1], columns[2], columns[3], columns[4], columns[5]]
 
 #%%###########################################################################
-#                              8. MAIN                                      #
+#                              07. MAIN                                      #
 ##############################################################################
 if __name__ == '__main__':
     app.run_server(debug=False)
