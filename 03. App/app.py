@@ -19,32 +19,20 @@ from sqlalchemy import create_engine
 from numpy.random import randint
 from datetime import timedelta, datetime, date
 import calendar
+from params import colors, dark, postgre_ip, user, pswrd, params
+from comparativas import selector_de_fechas, histograma_layout, get_histogram2
 
 #%%###########################################################################
 #                            01. CONFIGURACIÓN                               #
 ##############################################################################
-
-dark = True
-
-# Cambiar a False para conectarse a un servidor remoto y modificar 
-# la ip con la dirección del servidor
-local = True
-
-if not local:
-    postgre_ip = 'dattiumapp.c1hwki2zbgvt.eu-west-3.rds.amazonaws.com'
-    user = 'postgres'
-    pswrd = 'D4ttium1'
-else:
-    postgre_ip = '127.0.0.1'
-    user = 'test'
-    pswrd = 'test123'
 
 # font_awesome1 = "//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css"
 font_awesome2 = "//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css"
 
 external_scripts = [{
         'src': 'https://kit.fontawesome.com/c67d65477e.js',
-        'crossorigin': 'anonymous'
+        'jquery': 'https://code.jquery.com/jquery-3.3.1.min.js',
+        'crossorigin': 'anonymous',
     }
 ]
 
@@ -65,6 +53,10 @@ columns = np.array(list(df_raw.columns)[1:len(df_raw.columns)])
 columns_s1 = columns[0:11]
 columns_s2 = columns[11:23]
 
+columns1 = columns[0:7]
+columns2 = columns[7:14]
+columns3 = columns[14:23]
+
 # Evento para el refresco del grafico principal
 GRAPH_INTERVAL = os.environ.get("GRAPH_INTERVAL", 3000)
 
@@ -78,65 +70,13 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets, external_sc
 app.config.suppress_callback_exceptions = True
 auth = dash_auth.BasicAuth(app,USERNAME_PASSWORD_PAIRS)
 server = app.server
-
-if dark:
-    graph_bg = '#303030'#272B30'
-    text_color = '#AAAA9F'
-    text_highlight = '#CCCCC0'
-    pp_bg_green = '#356437'
-    pp_bg_red = '#653434'
-    pp_mk_green = '#59C159'
-    pp_mk_red = '#EC5550'
-    pp_ma_grey = '#AAAAAA'
-    chm_good = '#DDDDDD'
-    chm_dev = '#e8b68b'
-    chm_fail = '#e04f38'
-else:
-    graph_bg = ''
-    text_color = '262626'
-    text_highlight = '0d0d0d'
-    pp_bg_green = '#F7FAF0'
-    pp_bg_red = '#F9E9E0'
-    pp_mk_green = '#76B7B2'
-    pp_mk_red = '#E15759'
-    pp_ma_grey = '#DDDDDD'
-    chm_green = '#EEEEEE'
-    chm_dev = '#E8C2A0'
-    chm_fail = '#E06E5D'
-
-colors = {
-    'navbar': 'secondary',
-    'title-bg': '#444444',
-    'graph-bg': graph_bg,
-    'text': text_color,
-    'text-highlight': text_highlight,
-    'text-dropdown': '#3A3A3A',
-    'plantplot-bg-green': pp_bg_green, # Plantplot Background Green
-    'plantplot-bg-red': pp_bg_red, # Plantplot Background Red
-    'plantplot-l-red': '#B31919', # Plantplot Line Red #E46B6B
-    'plantplot-mk-green': pp_mk_green, # Plantplot Marker Green
-    'plantplot-mk-red': pp_mk_red, # Plantplot Merker Red
-    'plantplot-ma-grey': pp_ma_grey, # Plantplot Moving Average line grey
-    'chm-good': chm_good, # Calendar HeatMap Green
-    'chm-dev': chm_dev, # Calendar HeatMap Yellow
-    'chm-fail': chm_fail, # Calendar HeatMap Red
-    'histogram-act': '#FFA64D', # Histogram Actual
-    'histogram-act-br': '#FF8C1A', # Histogram Actual Border
-    'histogram-hist': '#4DA6FF', # Histogram Historical
-    'histogram-hist-br': '#1A8CFF', # Histogram Historical Border
-    'grid': '#636363', 
-    'signal-line': '#FEC036', # Linea amarilla del gráfico de la señal
-    'signal-marker': '#B31919',
-    'stacked-bar-yellow': '#FEC036',
-}
-
 # Parametros de configuración del texto de los gráficos
-family_font = 'Arial, sans-serif' # Graph Text Font
-size_font = 16 # Graph Text Size
-size_font_summary = 16 # Summary Graph Text Size
-size_font_cards = 16 # Font Text Size
-pp_size = '10%' # Plant plot graph size
-navbar_logo_size = "90%" # Navbar logo size
+# family_font = 'Arial, sans-serif' # Graph Text Font
+# size_font = 16 # Graph Text Size
+# size_font_summary = 16 # Summary Graph Text Size
+# size_font_cards = 16 # Font Text Size
+# pp_size = '10%' # Plant plot graph size
+# navbar_logo_size = "90%" # Navbar logo size
 
 perfiles = {
     0: '5.5',
@@ -296,6 +236,9 @@ def calendar_heatmap(df, seccion):
     elif seccion == 'S2':
         label = '_S2'
         label_max = 2
+    elif seccion == 'S3':
+        label = '_S3'
+        label_max = 2
     else:
         label = ''
         label_max = 6
@@ -364,7 +307,7 @@ def calendar_heatmap(df, seccion):
             ticktext= xticktext,
             tickvals = xtickvals,
         ),
-        font={"color": colors['text'], "size": size_font, "family": family_font,},
+        font={"color": colors['text'], "size": params["size_font"], "family": params["family_font"],},
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
         margin = dict(t=40, b=40, r=40, l=40),
@@ -423,6 +366,7 @@ bottom_seccion_real_layout = html.Div([
             dbc.Tab(label='General', tab_id='general'), 
             dbc.Tab(label='Horno', tab_id='S1'),
             dbc.Tab(label='Casetas', tab_id='S2'),
+            dbc.Tab(label='Placa enfriadora', tab_id='S3'),
         ], id='chm-tabs', active_tab='general'),
         html.Div([
             html.Div([calendar_heatmap_layout],id='chm-tab-content', className='col-6 pl-3 pr-1 h-100'),
@@ -492,6 +436,18 @@ def get_plant_plot(df):
     column = 'label'
     datemin1 = df['date'].min() - timedelta(hours=2)
     datemax1 = df['date'].max() + timedelta(hours=2)
+        
+    df.loc[df['label_S1']==2, 'label_S1'] = 0.2
+    df.loc[df['label_S1']==1, 'label_S1'] = 1.2
+    df.loc[df['label_S1']==0, 'label_S1'] = 2.2
+    
+    df.loc[df['label_S2']==2, 'label_S2'] = 0.2
+    df.loc[df['label_S2']==1, 'label_S2'] = 1.2
+    df.loc[df['label_S2']==0, 'label_S2'] = 2.2
+
+    df.loc[df['label_S3']==2, 'label_S3'] = 0.2
+    df.loc[df['label_S3']==1, 'label_S3'] = 1.2
+    df.loc[df['label_S3']==0, 'label_S3'] = 2.2
     
     moving_average = df[column].rolling(3).mean()
     
@@ -504,10 +460,10 @@ def get_plant_plot(df):
         line={"color": "#FF6B35"},
         hoverinfo='x+text',
         # Texto que se muestra al pasar el cursor por encima de un punto
-        hovertext = ['<b>Id</b>: {}<br><b>All</b>: {}<br><b>S1</b>: {}'.format(row['id'],row['label'], row['label_S1']) \
+        hovertext = ['<b>Horno</b>: {}'.format(row['label_S1']) \
                      for index, row in df.iterrows()],
         # mode="markers",
-        name='Label',
+        name='Horno',
         stackgroup='one',
         marker=dict(
             color=[colors['plantplot-mk-green'] if x > 3 else colors['plantplot-mk-red'] for x in df['label']],
@@ -523,10 +479,10 @@ def get_plant_plot(df):
         line={"color": "#F7C59F"},
         hoverinfo='x+text',
         # Texto que se muestra al pasar el cursor por encima de un punto
-        hovertext = ['<b>Id</b>: {}<br><b>All</b>: {}<br><b>S2</b>: {}'.format(row['id'],row['label'], row['label_S2']) \
+        hovertext = ['<b>Casetas</b>: {}'.format(row['label_S2']) \
                      for index, row in df.iterrows()],
         # mode="markers",
-        name='Label',
+        name='Casetas',
         stackgroup='one',
         marker=dict(
             color=[colors['plantplot-mk-green'] if x > 3 else colors['plantplot-mk-red'] for x in df['label']],
@@ -542,10 +498,10 @@ def get_plant_plot(df):
         line={"color": "#EFEFD0"},
         hoverinfo='x+text',
         # Texto que se muestra al pasar el cursor por encima de un punto
-        hovertext = ['<b>Id</b>: {}<br><b>All</b>: {}<br><b>S3</b>: {}'.format(row['id'],row['label'], row['label_S3']) \
+        hovertext = ['<b>Id</b>: {}<br><b>All</b>: {}<br><b>Placa Enfriadora</b>: {}'.format(row['id'],row['label'], row['label_S3']) \
                      for index, row in df.iterrows()],
         mode="line+markers",
-        name='Label',
+        name='Placa Enfriadora',
         stackgroup='one',
         marker=dict(
             color=[colors['plantplot-mk-green'] if x > 3 else colors['plantplot-mk-red'] for x in df['label']],
@@ -560,13 +516,14 @@ def get_plant_plot(df):
         line={"color": colors['plantplot-ma-grey']},
         mode="line",
         name='Moving average 5',
+        visible="legendonly"
     )
         
     # Opciones de estilo del gráfico
     layout = dict(
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
-        font={"color": colors['text'], "size": size_font, "family": family_font,},
+        font={"color": colors['text'], "size": params["size_font"], "family": params["family_font"],},
         margin={"t":30, "b": 50, "r": 15, "l":15},
         # height=500,
         xaxis={
@@ -590,44 +547,6 @@ def get_plant_plot(df):
             "nticks": 7,
             "automargin": True,
         },
-        # shapes=[
-        #     # Rectangulo de color verde para estilizar el scatter
-        #     dict(
-        #         type='rect', 
-        #         x0=datemin1, 
-        #         x1=datemax1, 
-        #         y0=4, 
-        #         y1=6.5, 
-        #         fillcolor=colors['plantplot-bg-green'], 
-        #         layer='below',
-        #         linewidth=0,
-        #     ),
-        #     # Rectangulo de color rojo para estilizar el scatter
-        #     dict(
-        #         type='rect', 
-        #         x0=datemin1, 
-        #         x1=datemax1, 
-        #         y0=0, 
-        #         y1=4, 
-        #         fillcolor=colors['plantplot-bg-red'], 
-        #         layer='below',
-        #         linewidth=0,
-        #     ),
-        #     # Linea de color rojo para estilizar el scatter
-        #     dict(
-        #         type="line",
-        #         x0=datemin1,
-        #         y0=4,
-        #         x1=datemax1,
-        #         y1=4,
-        #         line=dict(
-        #             color=colors['plantplot-l-red'],
-        #             width=4,
-            
-        #         ),
-        #         layer='below'
-        #     )
-        # ],
     )
     return trace, trace2, trace3, trace4, layout
 
@@ -768,21 +687,21 @@ def get_cards_layout(columns, desviaciones, df):
                                                               style={"color": colors['text-highlight']})], 
                                               className='text-center', 
                                               style={"color": colors['text'], 
-                                                     "font-size": size_font_cards, 
-                                                     "font-family": family_font,}, 
+                                                     "font-size": params["size_font_cards"], 
+                                                     "font-family": params["family_font"],}, 
                                               id='list-item-{}'.format(i)))
             i+=1
         return children
     else:
         if desviaciones:
             return dbc.ListGroupItem("No hay ningúna señal desviada", className='text-center',\
-                                     color='success', style={"font-size": size_font_cards,\
-                                                             "font-family": family_font,},\
+                                     color='success', style={"font-size": params["size_font_cards"],\
+                                                             "font-family": params["family_font"],},\
                                          id='list-item-1')
         else:
             return dbc.ListGroupItem("No hay ningúna señal con fallos de registro/sensor",\
-                                     className='text-center', style={"font-size": size_font_cards,\
-                                                                     "font-family": family_font,}, color='success',\
+                                     className='text-center', style={"font-size": params["size_font_cards"],\
+                                                                     "font-family": params["family_font"],}, color='success',\
                                          id='list-item-1')
 
 # Función que devuelve el texto que ira dentro del recuadro de información de la barra seleccionada page-2
@@ -794,13 +713,13 @@ def get_card_info_layout(id_data, column):
                                {} {} **Fecha**: {}'''.format(df['id'].iloc[0], spaces, df['product'].iloc[0],
                             spaces, df['quality'].iloc[0], spaces, df['date'].iloc[0]), 
                             style={"color": colors['text'], 
-                                    "font-size": size_font_cards, 
-                                    "font-family": family_font,})
+                                    "font-size": params["size_font_cards"], 
+                                    "font-family": params["family_font"],})
     else:
         text = dcc.Markdown('''**ID**: - {} **Producto**: - {} **Calidad**:
                                - {} **Fecha**: - {}'''.format(spaces, spaces, 
                                spaces, spaces), 
-                            style={"color": colors['text'], "font-size": size_font_cards, "font-family": family_font,})          
+                            style={"color": colors['text'], "font-size": params["size_font_cards"], "font-family": params["family_font"],})          
     return text
 
 # Función que devuelve el texto que ira dentro del recuadro de información de la señal seleccionada page-2
@@ -816,14 +735,14 @@ def get_signal_info(id_data, column):
                             **Limite inferior**: {:.2f}'''.format(column, df[column].iloc[0], 
                             mean, mean + std, mean - std),
                             style={"color": colors['text'], 
-                                    "font-size": size_font_cards, 
-                                    "font-family": family_font,})
+                                    "font-size": params["size_font_cards"], 
+                                    "font-family": params["family_font"],})
     else:
         text = dcc.Markdown('''**-**: -  
                             **Valor Medio**: -  
                             **Limite superior**: -  
                             **Limite inferior**: -''', 
-                            style={"color": colors['text'], "font-size": size_font_cards, "font-family": family_font,})        
+                            style={"color": colors['text'], "font-size": params["size_font_cards"], "font-family": params["family_font"],})        
     return text
 
 # Función que devuelve el trace y layout del gráfico de la señal
@@ -896,7 +815,7 @@ def get_signal_plot(df, column, id_data):
     layout = dict(
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
-        font={"color": colors['text'], "size": size_font, "family": family_font,},
+        font={"color": colors['text'], "size": params["size_font"], "family": params["family_font"],},
         margin={'t':25, 'b': 45, 'l': 30, 'r': 15},
         barmode='overlay',
         legend={
@@ -959,7 +878,7 @@ def get_signal_plot(df, column, id_data):
                 'type':"line",
                 # 'xref':df[df['id']==id_data['id']][column].iloc[0],
                 'xref':'paper',
-                'x0':domain + 0.01,
+                'x0':domain + 0.02,
                 'y0':df[df['id']==id_data][column].iloc[0],
                 'x1':1,
                 'y1':df[df['id']==id_data][column].iloc[0],
@@ -978,7 +897,7 @@ def get_signal_plot(df, column, id_data):
             # "showticklabels": False,
         },
         xaxis2={
-            "domain": [domain + 0.01, 1],
+            "domain": [domain + 0.02, 1],
         },
     )
     return trace, trace2, trace3, trace4, layout
@@ -1030,7 +949,7 @@ def get_histogram(df, column, id_data):
         barmode='overlay',
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
-        font={"color": colors['text'], "size": size_font, "family": family_font,},
+        font={"color": colors['text'], "size": params["size_font"], "family": params["family_font"],},
         margin={'t':25, 'b': 45, 'l': 30, 'r': 15},
         legend={
             "orientation": "h",
@@ -1295,7 +1214,7 @@ def bar_graph_product_summary(df):
     layout = dict(
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
-        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        font={"color": colors['text'], "size": params["size_font_summary"], "family": params["family_font"],},
         margin={"t":30, "r":15, "l": 35},
         xaxis={
             "tickangle": 30,
@@ -1329,7 +1248,7 @@ def liner_graph_product_summary(df, product, quality, xaxis):
     layout = dict(
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
-        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        font={"color": colors['text'], "size": params["size_font_summary"], "family": params["family_font"],},
         margin={"t":30, "r":15, "l": 35},
         xaxis={
             "tickangle": 30,
@@ -1384,7 +1303,7 @@ def bar_graph_seccions_summary(df):
     layout = dict(
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
-        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        font={"color": colors['text'], "size": params["size_font_summary"], "family": params["family_font"],},
         margin={"t":30, "r":15, "l": 35},
         xaxis={
             "tickangle": 30,
@@ -1411,7 +1330,7 @@ def liner_graph_seccions_summary(df, seccion, xaxis):
     layout = dict(
         plot_bgcolor=colors["graph-bg"],
         paper_bgcolor=colors["graph-bg"],
-        font={"color": colors['text'], "size": size_font_summary, "family": family_font,},
+        font={"color": colors['text'], "size": params["size_font_summary"], "family": params["family_font"],},
         margin={"t":30, "r":15, "l": 35},
         xaxis={
             "tickangle": 30,
@@ -1432,13 +1351,14 @@ navbar = dbc.Navbar([
                 # Imagen con el logo de Dattium que nos llevara a la página principal de la App
                 # Use row and col to control vertical alignment of logo / brand
                 html.Img(src=app.get_asset_url(navbar_image),\
-                                          height=navbar_logo_size),
+                                          height=params["navbar_logo_size"]),
                 href="/home",
                 className='float-right col-2 h-100'
             ),
             dbc.Nav([
                 dbc.NavItem(dbc.NavLink("Home", href="/home", style={"color":colors['text']})),
                 dbc.NavItem(dbc.NavLink("Reports", href="/reports", style={"color":colors['text']}, id='report_page_nav')),
+                dbc.NavItem(dbc.NavLink("Comparativas", href="/comparativas", style={"color":colors['text']}, id='comparativas_page_nav')),
             ], className=''),
     ], className='lg py-1 px-1', color=colors['navbar'], style={"height": '5vh'})
     
@@ -1472,6 +1392,8 @@ def display_page(pathname):
         return seccions_page_layout
     elif pathname == '/reports':
          return reports_page_layout
+    elif pathname == '/comparativas':
+        return comparativas_page_layout
     else:
         return home_page_layout
     # You could also return a 404 "URL not found" page here
@@ -1638,7 +1560,7 @@ def render_chm_tab_content(active_tab):
     [State("date-min", "date"), State("hour-min", "value"), State("min-min", "value"),
      State("date-max", "date"), State("hour-max", "value"), State("min-max", "value"),]
 )
-def update_date_min(hour_up_min, min_up_min, hour_down_min, min_down_min,
+def update_date(hour_up_min, min_up_min, hour_down_min, min_down_min,
                     hour_up_max, min_up_max, hour_down_max, min_down_max,
                     click_data, fecha_min, hour_min, minute_min,
                     fecha_max, hour_max, minute_max):
@@ -1740,9 +1662,27 @@ seccions_page_layout = html.Div([
                     dbc.CardBody([
                         html.Img(src=app.get_asset_url(f"plant-s1.png"), id='seccion-img',\
                                  className='mx-auto d-block h-100 w-100'),
-                        html.I(className="fas fa-exclamation-triangle warning-icon", style={"top": "35%", "left": "76%"}),
-                        html.I(className="fas fa-exclamation-triangle warning-yellow-icon", style={"top": "56%", "left": "80.5%"}),
-                        html.I(className="fas fa-exclamation-triangle warning-icon", style={"top": "49%", "left": "63.5%"}),
+                        html.Div([
+                            html.I(className="fas fa-exclamation-triangle warning-icon icono-plano", 
+                                   style={"top": "35%", "left": "76%"}, id='icon_signal1'),
+                            html.Div([
+                                dbc.Card([
+                                    dbc.CardHeader([
+                                        html.H4('Amina Flow', className='text-style m-0'),
+                                    ], className='px-2 py-1'),
+                                    dbc.CardBody([
+                                        # get_card_info_layout(id, default)
+                                        html.P(dcc.Markdown('''**Valor**: 0.00''', 
+                                                            style={"color": colors['text'], 
+                                                                   "font-size": params["size_font_cards"], 
+                                                                   "font-family": params["family_font"],}), 
+                                               className='card-text text-left', id='card_signal1_info'),
+                                    ], className=''),
+                                ], className=''),
+                            ], id='card_signal1', className='invisible', style={"top": "7%", "left": "76%", "position": "absolute"})
+                        ], className='h-25 w-25'),
+                        html.I(className="fas fa-exclamation-triangle warning-yellow-icon icono-plano", style={"top": "56%", "left": "80.5%"}),
+                        html.I(className="fas fa-exclamation-triangle warning-icon icono-plano", style={"top": "49%", "left": "63.5%"}),
                         # html.I(className="fas fa-check-circle check-icon", style={"top": "12%", "left": "40%"}),
                         # html.Div(className='red-dot'),
                         # html.Div(className='green-dot'),
@@ -1803,12 +1743,12 @@ def modify_info_card_s1(timestamp, column, active_tab, id_data):
     return_data = dcc.Markdown('''**ID**: - {} **Producto**: - {} **Calidad**:
                                - {} **Fecha**: - {}'''.format(spaces, spaces, 
                                spaces, spaces), 
-                            style={"color": colors['text'], "font-size": size_font_cards, "font-family": family_font,})   
+                            style={"color": colors['text'], "font-size": params["size_font_cards"], "font-family": params["family_font"],})   
     return_data_signal = dcc.Markdown('''**-**: -  
                             **Valor Medio**: -  
                             **Limite superior**: -  
                             **Limite inferior**: -''', 
-                            style={"color": colors['text'], "font-size": size_font_cards, "font-family": family_font,})
+                            style={"color": colors['text'], "font-size": params["size_font_cards"], "font-family": params["family_font"],})
     if id_data is not None:
         if 'id' in id_data.keys():
             return_data = get_card_info_layout(id_data['id'], column)
@@ -1867,6 +1807,17 @@ def gen_signal_s1(column, active_tab, id_data):
     trace5, trace6, layout2 = get_histogram(df, column, id_data['id'])
     return [dict(data=[trace, trace2, trace3, trace4], layout=layout), dict(data=[trace5, trace6], layout=layout2)]
 
+
+@app.callback(
+    Output("card_signal1", "className"), 
+    [Input("icon_signal1", "n_clicks")],
+)
+def show_info_icon(n_clicks):
+    if (n_clicks is None) or (n_clicks % 2 == 0):
+        classname = 'invisible'
+    else:
+        classname = ''
+    return classname
 
 #%%###########################################################################
 #                           06_1. REPORTS-PAGE                               #
@@ -2001,6 +1952,192 @@ def bar_graph_seccion(n_clicks, active_tab_hp, datemin, datemax, hourmin, hourma
     
     trace, layout = bar_graph_seccions_summary(df)
     return dict(data=trace, layout=layout)
+
+#%%###########################################################################
+#                         06_1. COMPARATIVA-PAGE                             #
+##############################################################################
+
+# Página con los informes por seccion y producto
+comparativas_page_layout = html.Div([
+    html.Div([
+        html.Div([
+            dbc.Card([
+                dbc.CardHeader([html.H5('Selector de fechas 1', className='py-0 text-style', id="selector-header1")], className='px-2 pt-1 p-0'),
+                dbc.CardBody([
+                    html.Div([selector_de_fechas('-1', date_min, date_max, True)], className='h-100 m-0'),
+                ], className='h-100 pb-2 m-0 px-2'),
+            ], className='h-100'),
+        ], className='h-100 col-6 pl-2 pr-1'),
+        html.Div([
+            dbc.Card([
+                dbc.CardHeader([html.H5('Selector de fechas 2', className='py-0 text-style', id="selector-header2")], className='px-2 pt-1 p-0'),
+                dbc.CardBody([
+                    html.Div([selector_de_fechas('-2', date_min, date_max, True)], className='h-100 m-0'),
+                ], className='h-100 pb-2 m-0'),
+            ], className='h-100'),
+        ], className='h-100 col-6 pl-1 pr-2'),
+    ], className='px-3 pt-2 row m-0 pb-2', style={"height": "28%"}),
+    dbc.Tabs([
+        dbc.Tab(label='Horno', tab_id='s1'),
+        dbc.Tab(label='Casetas', tab_id='s2'),
+        dbc.Tab(label='Placa de enfriamiento', tab_id='s3'),
+    ], id='seccion-tabs', active_tab='s1', className='pt-2'),
+    html.Div([
+        html.Div([
+            html.Div([
+                histograma_layout(1),
+            ], className='col-4 h-100 pl-2 pr-1 pt-2'),
+            html.Div([
+                histograma_layout(2),
+            ], className='col-4 h-100 pl-1 pr-1 pt-2'),
+            html.Div([
+                histograma_layout(3),
+            ], className='col-4 h-100 pl-1 pr-2 pt-2'),
+        ], className='row m-0 h-50'),
+        html.Div([
+            html.Div([
+                histograma_layout(4),
+            ], className='col-4 h-100 pl-2 pr-1 pt-2'),
+            html.Div([
+                histograma_layout(5),
+            ], className='col-4 h-100 pl-1 pr-1 pt-2'),
+            html.Div([
+                histograma_layout(6),
+            ], className='col-4 h-100 pl-1 pr-2 pt-2'),
+        ], className='row m-0 h-50')
+    ], style={"height": "calc(72% - 40px)"})
+], className='h-100 pb-2')
+
+
+
+@app.callback(
+    [Output("date-min-1", "date"), Output("hour-min-1", "value"), Output("min-min-1", "value"),
+      Output("date-max-1", "date"), Output("hour-max-1", "value"), Output("min-max-1", "value")],
+    [Input("hour-min-up-1", "n_clicks_timestamp"),Input("min-min-up-1", "n_clicks_timestamp"),
+      Input("hour-min-down-1", "n_clicks_timestamp"), Input("min-min-down-1", "n_clicks_timestamp"),
+      Input("hour-max-up-1", "n_clicks_timestamp"),Input("min-max-up-1", "n_clicks_timestamp"),
+      Input("hour-max-down-1", "n_clicks_timestamp"), Input("min-max-down-1", "n_clicks_timestamp")],
+    [State("date-min-1", "date"), State("hour-min-1", "value"), State("min-min-1", "value"),
+      State("date-max-1", "date"), State("hour-max-1", "value"), State("min-max-1", "value"),]
+)
+def update_date_1(hour_up_min, min_up_min, hour_down_min, min_down_min,
+                    hour_up_max, min_up_max, hour_down_max, min_down_max,
+                    fecha_min, hour_min, minute_min,
+                    fecha_max, hour_max, minute_max):
+    
+    ctx = dash.callback_context
+    clicked = ctx.triggered[0]['prop_id'].split('.')[0]
+    values_min = {"hour-min-up-1":[1,0], 
+                  "min-min-up-1":[0,1], 
+                  "hour-min-down-1":[-1,0], 
+                  "min-min-down-1":[0,-1],
+                  "hour-max-up-1":[0,0], 
+                  "min-max-up-1":[0,0], 
+                  "hour-max-down-1":[0,0], 
+                  "min-max-down-1":[0,0],
+                  "calendar-heatmap-1":[0,0],
+                  }
+    values_max = {"hour-min-up-1":[0,0], 
+                  "min-min-up-1":[0,0], 
+                  "hour-min-down-1":[0,0], 
+                  "min-min-down-1":[0,0],
+                  "hour-max-up-1":[1,0], 
+                  "min-max-up-1":[0,1], 
+                  "hour-max-down-1":[-1,0], 
+                  "min-max-down-1":[0,-1],
+                  "calendar-heatmap-1":[0,0],
+                  }
+    date_out_min = datetime.strptime(fecha_min + " " + str(hour_min).zfill(2) + ":"+ str(minute_min).zfill(2),
+                                  '%Y-%m-%d %H:%M')
+    date_out_min = date_out_min + timedelta(hours=values_min[clicked][0], minutes=values_min[clicked][1])
+    
+    date_out_max = datetime.strptime(fecha_max + " " + str(hour_max).zfill(2) + ":"+ str(minute_max).zfill(2),
+                                  '%Y-%m-%d %H:%M')
+    date_out_max = date_out_max + timedelta(hours=values_max[clicked][0], minutes=values_max[clicked][1])
+    return [date_out_min.date(), str(date_out_min.hour).zfill(2), str(date_out_min.minute).zfill(2), 
+            date_out_max.date(), str(date_out_max.hour).zfill(2), str(date_out_max.minute).zfill(2)]
+
+@app.callback(
+    [Output("date-min-2", "date"), Output("hour-min-2", "value"), Output("min-min-2", "value"),
+      Output("date-max-2", "date"), Output("hour-max-2", "value"), Output("min-max-2", "value")],
+    [Input("hour-min-up-2", "n_clicks_timestamp"),Input("min-min-up-2", "n_clicks_timestamp"),
+      Input("hour-min-down-2", "n_clicks_timestamp"), Input("min-min-down-2", "n_clicks_timestamp"),
+      Input("hour-max-up-2", "n_clicks_timestamp"),Input("min-max-up-2", "n_clicks_timestamp"),
+      Input("hour-max-down-2", "n_clicks_timestamp"), Input("min-max-down-2", "n_clicks_timestamp")],
+    [State("date-min-2", "date"), State("hour-min-2", "value"), State("min-min-2", "value"),
+      State("date-max-2", "date"), State("hour-max-2", "value"), State("min-max-2", "value")]
+)
+def update_date_2(hour_up_min, min_up_min, hour_down_min, min_down_min,
+                    hour_up_max, min_up_max, hour_down_max, min_down_max,
+                    fecha_min, hour_min, minute_min,
+                    fecha_max, hour_max, minute_max):
+    
+    ctx = dash.callback_context
+    clicked = ctx.triggered[0]['prop_id'].split('.')[0]
+    values_min = {"hour-min-up-2":[1,0], 
+                  "min-min-up-2":[0,1], 
+                  "hour-min-down-2":[-2,0], 
+                  "min-min-down-2":[0,-2],
+                  "hour-max-up-2":[0,0], 
+                  "min-max-up-2":[0,0], 
+                  "hour-max-down-2":[0,0], 
+                  "min-max-down-2":[0,0],
+                  "calendar-heatmap-2":[0,0],
+                  }
+    values_max = {"hour-min-up-2":[0,0], 
+                  "min-min-up-2":[0,0], 
+                  "hour-min-down-2":[0,0], 
+                  "min-min-down-2":[0,0],
+                  "hour-max-up-2":[1,0], 
+                  "min-max-up-2":[0,1], 
+                  "hour-max-down-2":[-2,0], 
+                  "min-max-down-2":[0,-2],
+                  "calendar-heatmap-2":[0,0],
+                  }
+    date_out_min = datetime.strptime(fecha_min + " " + str(hour_min).zfill(2) + ":"+ str(minute_min).zfill(2),
+                                  '%Y-%m-%d %H:%M')
+    date_out_min = date_out_min + timedelta(hours=values_min[clicked][0], minutes=values_min[clicked][1])
+    
+    date_out_max = datetime.strptime(fecha_max + " " + str(hour_max).zfill(2) + ":"+ str(minute_max).zfill(2),
+                                  '%Y-%m-%d %H:%M')
+    date_out_max = date_out_max + timedelta(hours=values_max[clicked][0], minutes=values_max[clicked][1])
+    return [date_out_min.date(), str(date_out_min.hour).zfill(2), str(date_out_min.minute).zfill(2),
+            date_out_max.date(), str(date_out_max.hour).zfill(2), str(date_out_max.minute).zfill(2)]
+
+# Callback que modifica el contenido de la página en función del Tab activo.
+@app.callback(
+    [Output("histogram-1", "figure"), Output("histogram-2", "figure"), Output("histogram-3", "figure"),
+     Output("histogram-4", "figure"), Output("histogram-5", "figure"), Output("histogram-6", "figure"),
+     Output("hist-header-1", "children"), Output("hist-header-2", "children"), Output("hist-header-3", "children"),
+     Output("hist-header-4", "children"), Output("hist-header-5", "children"), Output("hist-header-6", "children")],
+    # Output("hist-header-2", "children"),
+    [Input("search-button-1", "n_clicks"), Input('search-button-2', 'n_clicks'),
+      Input("seccion-tabs", "active_tab")],
+    [State("date-min-1", "date"), State("date-max-1", "date"), State('hour-min-1', 'value'),
+      State('hour-max-1', 'value'), State('min-min-1', 'value'), State('min-max-1', 'value'),
+      State("date-min-2", "date"), State("date-max-2", "date"), State('hour-min-2', 'value'),
+      State('hour-max-2', 'value'), State('min-min-2', 'value'), State('min-max-2', 'value')]
+)
+def histogram_traces(n_clicks1, n_clicks2, active_tab, datemin_1, datemax_1, 
+                                hourmin_1, hourmax_1, minmin_1, minmax_1, datemin_2, 
+                                datemax_2, hourmin_2, hourmax_2, minmin_2, minmax_2):  
+    if active_tab == 's2':
+        columns = columns2
+    elif active_tab == 's3':
+        columns = columns3
+    else:
+        columns = columns1
+    datemin_1 = "'" + datemin_1 + " " + str(hourmin_1).zfill(2) + ":"+ str(minmin_1).zfill(2) +"'"
+    datemax_1 = "'" + datemax_1 + " " + str(hourmax_1).zfill(2) + ":"+ str(minmin_1).zfill(2) +"'"
+    datemin_2 = "'" + datemin_2 + " " + str(hourmin_2).zfill(2) + ":"+ str(minmin_2).zfill(2) +"'"
+    datemax_2 = "'" + datemax_2 + " " + str(hourmax_2).zfill(2) + ":"+ str(minmin_2).zfill(2) +"'"
+    # Consulta a postgreSQL que devuelve
+    df1 = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin_1, datemax_1)), server_conn)
+    df2 = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin_2, datemax_2)), server_conn)
+
+    return [get_histogram2(df1,df2, columns[0]), get_histogram2(df1,df2, columns[1]), get_histogram2(df1,df2, columns[2]),
+            get_histogram2(df1,df2, columns[3]), get_histogram2(df1,df2, columns[4]), get_histogram2(df1,df2, columns[5]),
+            columns[0], columns[1], columns[2], columns[3], columns[4], columns[5]]
 
 #%%###########################################################################
 #                              07. MAIN                                      #
