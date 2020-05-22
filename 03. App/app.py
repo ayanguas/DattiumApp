@@ -19,25 +19,12 @@ from sqlalchemy import create_engine
 from numpy.random import randint
 from datetime import timedelta, datetime, date
 import calendar
+from params import colors, dark, postgre_ip, user, pswrd, params
+from comparativas import selector_de_fechas, histograma_layout, get_histogram2
 
 #%%###########################################################################
 #                            01. CONFIGURACIÓN                               #
 ##############################################################################
-
-dark = True
-
-# Cambiar a False para conectarse a un servidor remoto y modificar 
-# la ip con la dirección del servidor
-local = True
-
-if not local:
-    postgre_ip = 'dattiumapp.c1hwki2zbgvt.eu-west-3.rds.amazonaws.com'
-    user = 'postgres'
-    pswrd = 'D4ttium1'
-else:
-    postgre_ip = '127.0.0.1'
-    user = 'test'
-    pswrd = 'test123'
 
 # font_awesome1 = "//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css"
 font_awesome2 = "//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css"
@@ -64,6 +51,10 @@ df_raw = pd.read_sql(('SELECT * FROM signals'), server_conn)
 columns = np.array(list(df_raw.columns)[1:len(df_raw.columns)])
 columns_s1 = columns[0:11]
 columns_s2 = columns[11:23]
+
+columns1 = columns[0:7]
+columns2 = columns[7:14]
+columns3 = columns[14:23]
 
 # Evento para el refresco del grafico principal
 GRAPH_INTERVAL = os.environ.get("GRAPH_INTERVAL", 3000)
@@ -1336,6 +1327,7 @@ navbar = dbc.Navbar([
             dbc.Nav([
                 dbc.NavItem(dbc.NavLink("Home", href="/home", style={"color":colors['text']})),
                 dbc.NavItem(dbc.NavLink("Reports", href="/reports", style={"color":colors['text']}, id='report_page_nav')),
+                dbc.NavItem(dbc.NavLink("Comparativas", href="/comparativas", style={"color":colors['text']}, id='comparativas_page_nav')),
             ], className=''),
     ], className='lg py-1 px-1', color=colors['navbar'], style={"height": '5vh'})
     
@@ -1369,6 +1361,8 @@ def display_page(pathname):
         return seccions_page_layout
     elif pathname == '/reports':
          return reports_page_layout
+    elif pathname == '/comparativas':
+        return comparativas_page_layout
     else:
         return home_page_layout
     # You could also return a 404 "URL not found" page here
@@ -1900,7 +1894,193 @@ def bar_graph_seccion(n_clicks, active_tab_hp, datemin, datemax, hourmin, hourma
     return dict(data=trace, layout=layout)
 
 #%%###########################################################################
-#                              07. MAIN                                      #
+#                         07. COMPARATIVA-PAGE                             #
+##############################################################################
+
+# Página con los informes por seccion y producto
+comparativas_page_layout = html.Div([
+    html.Div([
+        html.Div([
+            dbc.Card([
+                dbc.CardHeader([html.H5('Selector de fechas 1', className='py-0 text-style', id="selector-header1")], className='px-2 pt-1 p-0'),
+                dbc.CardBody([
+                    html.Div([selector_de_fechas('-1', datetime(2017, 4, 1, 1, 0, 0), datetime(2017, 5, 1, 1, 0, 0), True)], className='h-100 m-0'),
+                ], className='h-100 pb-2 m-0 px-2'),
+            ], className='h-100'),
+        ], className='h-100 col-6 pl-2 pr-1'),
+        html.Div([
+            dbc.Card([
+                dbc.CardHeader([html.H5('Selector de fechas 2', className='py-0 text-style', id="selector-header2")], className='px-2 pt-1 p-0'),
+                dbc.CardBody([
+                    html.Div([selector_de_fechas('-2', datetime(2017, 5, 1, 1, 0, 0), datetime(2017, 6, 1, 1, 0, 0), True)], className='h-100 m-0'),
+                ], className='h-100 pb-2 m-0'),
+            ], className='h-100'),
+        ], className='h-100 col-6 pl-1 pr-2'),
+    ], className='px-3 pt-2 row m-0 pb-2', style={"height": "28%"}),
+    dbc.Tabs([
+        dbc.Tab(label='Horno', tab_id='s1'),
+        dbc.Tab(label='Casetas', tab_id='s2'),
+        dbc.Tab(label='Placa de enfriamiento', tab_id='s3'),
+    ], id='seccion-tabs', active_tab='s1', className='pt-2'),
+    html.Div([
+        html.Div([
+            html.Div([
+                histograma_layout(1),
+            ], className='col-4 h-100 pl-2 pr-1 pt-2'),
+            html.Div([
+                histograma_layout(2),
+            ], className='col-4 h-100 pl-1 pr-1 pt-2'),
+            html.Div([
+                histograma_layout(3),
+            ], className='col-4 h-100 pl-1 pr-2 pt-2'),
+        ], className='row m-0 h-50'),
+        html.Div([
+            html.Div([
+                histograma_layout(4),
+            ], className='col-4 h-100 pl-2 pr-1 pt-2'),
+            html.Div([
+                histograma_layout(5),
+            ], className='col-4 h-100 pl-1 pr-1 pt-2'),
+            html.Div([
+                histograma_layout(6),
+            ], className='col-4 h-100 pl-1 pr-2 pt-2'),
+        ], className='row m-0 h-50')
+    ], style={"height": "calc(72% - 40px)"})
+], className='h-100 pb-2')
+
+
+
+@app.callback(
+    [Output("date-min-1", "date"), Output("hour-min-1", "value"), Output("min-min-1", "value"),
+      Output("date-max-1", "date"), Output("hour-max-1", "value"), Output("min-max-1", "value")],
+    [Input("hour-min-up-1", "n_clicks_timestamp"),Input("min-min-up-1", "n_clicks_timestamp"),
+      Input("hour-min-down-1", "n_clicks_timestamp"), Input("min-min-down-1", "n_clicks_timestamp"),
+      Input("hour-max-up-1", "n_clicks_timestamp"),Input("min-max-up-1", "n_clicks_timestamp"),
+      Input("hour-max-down-1", "n_clicks_timestamp"), Input("min-max-down-1", "n_clicks_timestamp")],
+    [State("date-min-1", "date"), State("hour-min-1", "value"), State("min-min-1", "value"),
+      State("date-max-1", "date"), State("hour-max-1", "value"), State("min-max-1", "value"),]
+)
+def update_date_1(hour_up_min, min_up_min, hour_down_min, min_down_min,
+                    hour_up_max, min_up_max, hour_down_max, min_down_max,
+                    fecha_min, hour_min, minute_min,
+                    fecha_max, hour_max, minute_max):
+    
+    ctx = dash.callback_context
+    clicked = ctx.triggered[0]['prop_id'].split('.')[0]
+    values_min = {"hour-min-up-1":[1,0], 
+                  "min-min-up-1":[0,1], 
+                  "hour-min-down-1":[-1,0], 
+                  "min-min-down-1":[0,-1],
+                  "hour-max-up-1":[0,0], 
+                  "min-max-up-1":[0,0], 
+                  "hour-max-down-1":[0,0], 
+                  "min-max-down-1":[0,0],
+                  "calendar-heatmap-1":[0,0],
+                  }
+    values_max = {"hour-min-up-1":[0,0], 
+                  "min-min-up-1":[0,0], 
+                  "hour-min-down-1":[0,0], 
+                  "min-min-down-1":[0,0],
+                  "hour-max-up-1":[1,0], 
+                  "min-max-up-1":[0,1], 
+                  "hour-max-down-1":[-1,0], 
+                  "min-max-down-1":[0,-1],
+                  "calendar-heatmap-1":[0,0],
+                  }
+    date_out_min = datetime.strptime(fecha_min + " " + str(hour_min).zfill(2) + ":"+ str(minute_min).zfill(2),
+                                  '%Y-%m-%d %H:%M')
+    date_out_min = date_out_min + timedelta(hours=values_min[clicked][0], minutes=values_min[clicked][1])
+    
+    date_out_max = datetime.strptime(fecha_max + " " + str(hour_max).zfill(2) + ":"+ str(minute_max).zfill(2),
+                                  '%Y-%m-%d %H:%M')
+    date_out_max = date_out_max + timedelta(hours=values_max[clicked][0], minutes=values_max[clicked][1])
+    return [date_out_min.date(), str(date_out_min.hour).zfill(2), str(date_out_min.minute).zfill(2), 
+            date_out_max.date(), str(date_out_max.hour).zfill(2), str(date_out_max.minute).zfill(2)]
+
+@app.callback(
+    [Output("date-min-2", "date"), Output("hour-min-2", "value"), Output("min-min-2", "value"),
+      Output("date-max-2", "date"), Output("hour-max-2", "value"), Output("min-max-2", "value")],
+    [Input("hour-min-up-2", "n_clicks_timestamp"),Input("min-min-up-2", "n_clicks_timestamp"),
+      Input("hour-min-down-2", "n_clicks_timestamp"), Input("min-min-down-2", "n_clicks_timestamp"),
+      Input("hour-max-up-2", "n_clicks_timestamp"),Input("min-max-up-2", "n_clicks_timestamp"),
+      Input("hour-max-down-2", "n_clicks_timestamp"), Input("min-max-down-2", "n_clicks_timestamp")],
+    [State("date-min-2", "date"), State("hour-min-2", "value"), State("min-min-2", "value"),
+      State("date-max-2", "date"), State("hour-max-2", "value"), State("min-max-2", "value")]
+)
+def update_date_2(hour_up_min, min_up_min, hour_down_min, min_down_min,
+                    hour_up_max, min_up_max, hour_down_max, min_down_max,
+                    fecha_min, hour_min, minute_min,
+                    fecha_max, hour_max, minute_max):
+    
+    ctx = dash.callback_context
+    clicked = ctx.triggered[0]['prop_id'].split('.')[0]
+    values_min = {"hour-min-up-2":[1,0], 
+                  "min-min-up-2":[0,1], 
+                  "hour-min-down-2":[-2,0], 
+                  "min-min-down-2":[0,-2],
+                  "hour-max-up-2":[0,0], 
+                  "min-max-up-2":[0,0], 
+                  "hour-max-down-2":[0,0], 
+                  "min-max-down-2":[0,0],
+                  "calendar-heatmap-2":[0,0],
+                  }
+    values_max = {"hour-min-up-2":[0,0], 
+                  "min-min-up-2":[0,0], 
+                  "hour-min-down-2":[0,0], 
+                  "min-min-down-2":[0,0],
+                  "hour-max-up-2":[1,0], 
+                  "min-max-up-2":[0,1], 
+                  "hour-max-down-2":[-2,0], 
+                  "min-max-down-2":[0,-2],
+                  "calendar-heatmap-2":[0,0],
+                  }
+    date_out_min = datetime.strptime(fecha_min + " " + str(hour_min).zfill(2) + ":"+ str(minute_min).zfill(2),
+                                  '%Y-%m-%d %H:%M')
+    date_out_min = date_out_min + timedelta(hours=values_min[clicked][0], minutes=values_min[clicked][1])
+    
+    date_out_max = datetime.strptime(fecha_max + " " + str(hour_max).zfill(2) + ":"+ str(minute_max).zfill(2),
+                                  '%Y-%m-%d %H:%M')
+    date_out_max = date_out_max + timedelta(hours=values_max[clicked][0], minutes=values_max[clicked][1])
+    return [date_out_min.date(), str(date_out_min.hour).zfill(2), str(date_out_min.minute).zfill(2),
+            date_out_max.date(), str(date_out_max.hour).zfill(2), str(date_out_max.minute).zfill(2)]
+
+# Callback que modifica el contenido de la página en función del Tab activo.
+@app.callback(
+    [Output("histogram-1", "figure"), Output("histogram-2", "figure"), Output("histogram-3", "figure"),
+     Output("histogram-4", "figure"), Output("histogram-5", "figure"), Output("histogram-6", "figure"),
+     Output("hist-header-1", "children"), Output("hist-header-2", "children"), Output("hist-header-3", "children"),
+     Output("hist-header-4", "children"), Output("hist-header-5", "children"), Output("hist-header-6", "children")],
+    # Output("hist-header-2", "children"),
+    [Input("search-button-1", "n_clicks"), Input('search-button-2', 'n_clicks'),
+      Input("seccion-tabs", "active_tab")],
+    [State("date-min-1", "date"), State("date-max-1", "date"), State('hour-min-1', 'value'),
+      State('hour-max-1', 'value'), State('min-min-1', 'value'), State('min-max-1', 'value'),
+      State("date-min-2", "date"), State("date-max-2", "date"), State('hour-min-2', 'value'),
+      State('hour-max-2', 'value'), State('min-min-2', 'value'), State('min-max-2', 'value')]
+)
+def histogram_traces(n_clicks1, n_clicks2, active_tab, datemin_1, datemax_1, 
+                                hourmin_1, hourmax_1, minmin_1, minmax_1, datemin_2, 
+                                datemax_2, hourmin_2, hourmax_2, minmin_2, minmax_2):  
+    if active_tab == 's2':
+        columns = columns2
+    elif active_tab == 's3':
+        columns = columns3
+    else:
+        columns = columns1
+    datemin_1 = "'" + datemin_1 + " " + str(hourmin_1).zfill(2) + ":"+ str(minmin_1).zfill(2) +"'"
+    datemax_1 = "'" + datemax_1 + " " + str(hourmax_1).zfill(2) + ":"+ str(minmin_1).zfill(2) +"'"
+    datemin_2 = "'" + datemin_2 + " " + str(hourmin_2).zfill(2) + ":"+ str(minmin_2).zfill(2) +"'"
+    datemax_2 = "'" + datemax_2 + " " + str(hourmax_2).zfill(2) + ":"+ str(minmin_2).zfill(2) +"'"
+    # Consulta a postgreSQL que devuelve
+    df1 = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin_1, datemax_1)), server_conn)
+    df2 = pd.read_sql(("SELECT * FROM signals WHERE date >= %s AND date < %s" % (datemin_2, datemax_2)), server_conn)
+
+    return [get_histogram2(df1,df2, columns[0]), get_histogram2(df1,df2, columns[1]), get_histogram2(df1,df2, columns[2]),
+            get_histogram2(df1,df2, columns[3]), get_histogram2(df1,df2, columns[4]), get_histogram2(df1,df2, columns[5]),
+            columns[0], columns[1], columns[2], columns[3], columns[4], columns[5]]
+
+#%%###########################################################################
+#                              8. MAIN                                      #
 ##############################################################################
 if __name__ == '__main__':
     app.run_server(debug=False)
