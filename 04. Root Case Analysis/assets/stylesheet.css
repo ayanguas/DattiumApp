@@ -1,0 +1,26 @@
+.plot-container > div {
+    height: 100%;
+}
+
+.text-style {
+    font-size: calc(0.5em + 0.5vw);
+    line-height: 1em;
+}
+
+.warning-icon {
+  font-size: calc(0.75vw + 0.75vh);
+  position: absolute;
+  color: #EC5550;
+}
+
+.warning-yellow-icon {
+  font-size: calc(0.75vw + 0.75vh);
+  position: absolute;
+  color: #FFCC00;
+}
+
+.check-icon {
+  font-size: calc(0.75vw + 0.75vh);
+  position: absolute;
+  color: #59C159;
+}
